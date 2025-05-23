@@ -18,10 +18,23 @@ private:
 
     void
     update_context() {
-        GAME_STATE is_end_ = judge->check_end_condition(
-            board->get_board(), state);
-        if (is_end_ != GAME_STATE::RULE_NOT_FOUND) {
-            state = is_end_;
+        GAME_CHECK is_end_ = judge->check_end_condition(
+            board->get_board());
+        if ((is_end_ != GAME_CHECK::RULE_NOT_FOUND) && 
+            (is_end_ != GAME_CHECK::ONGOING)) {
+            switch (is_end_) {
+            case GAME_CHECK::PLAYER1_WIN:
+                state = GAME_STATE::PLAYER1_WON;
+                break;
+            case GAME_CHECK::PLAYER2_WIN:
+                state = GAME_STATE::PLAYER2_WON;
+                break;
+            case GAME_CHECK::DRAW:
+                state = GAME_STATE::DREW;
+                break;
+            default:
+                break;
+            }
         }
     }
 
@@ -123,14 +136,22 @@ public:
             if (state != GAME_STATE::PLAYER1_TURN) {
                 ret = MOVE_RESULT::WRONG_TURN;
             } else {
-                ret = player1->move(move_);
+                ret = board->set_tile(move_,
+                                    TILE_STATE::PLAYER1);
+                if (ret == MOVE_RESULT::SUCCESS) {
+                    ret = player1->move(move_);
+                }
             }
             break;
         case PARTICIPANT::PLAYER2:
             if (state != GAME_STATE::PLAYER2_TURN) {
                 ret = MOVE_RESULT::WRONG_TURN;
             } else {
-                ret = player2->move(move_);
+                ret = board->set_tile(move_,
+                                    TILE_STATE::PLAYER2);
+                if (ret == MOVE_RESULT::SUCCESS) {
+                    ret = player2->move(move_);
+                }
             }
             break;
         default:
@@ -152,6 +173,11 @@ public:
                 ret = MOVE_RESULT::WRONG_TURN;
             } else {
                 ret = player1->undo();
+                if (ret == MOVE_RESULT::SUCCESS) {
+                    ret = board->unset_tile(player1
+                                            ->get_undone_moves()
+                                            ->top());
+                }
             }
             break;
         case PARTICIPANT::PLAYER2:
@@ -159,6 +185,11 @@ public:
                 ret = MOVE_RESULT::WRONG_TURN;
             } else {
                 ret = player2->undo();
+                if (ret == MOVE_RESULT::SUCCESS) {
+                    ret = board->unset_tile(player2
+                                            ->get_undone_moves()
+                                            ->top());
+                }
             }
             break;
         default:
@@ -180,6 +211,12 @@ public:
                 ret = MOVE_RESULT::WRONG_TURN;
             } else {
                 ret = player1->redo();
+                if (ret == MOVE_RESULT::SUCCESS) {
+                    ret = board->set_tile(player1
+                                        ->get_moves_history()
+                                        ->top(),
+                                        TILE_STATE::PLAYER1);
+                }
             }
             break;
         case PARTICIPANT::PLAYER2:
@@ -187,6 +224,12 @@ public:
                 ret = MOVE_RESULT::WRONG_TURN;
             } else {
                 ret = player2->redo();
+                if (ret == MOVE_RESULT::SUCCESS) {
+                    ret = board->set_tile(player2
+                                        ->get_moves_history()
+                                        ->top(),
+                                        TILE_STATE::PLAYER2);
+                }
             }
             break;
         default:
@@ -225,9 +268,9 @@ public:
 
     bool
     is_over() const {
-        return (state == GAME_STATE::PLAYER1_WIN ||
-                state == GAME_STATE::PLAYER2_WIN ||
-                state == GAME_STATE::DRAW);
+        return (state == GAME_STATE::PLAYER1_WON ||
+                state == GAME_STATE::PLAYER2_WON ||
+                state == GAME_STATE::DREW);
     }
 };
 

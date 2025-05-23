@@ -7,12 +7,48 @@
 #include <memory>
 
 class Ruling {
+protected:
+    uint32_t win_count;
+
+    GAME_CHECK brute_force_check_win(
+        std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_
+    ) {
+        size_t col_num_ = board_->size();
+        size_t row_num_ = board_->at(0).size();
+        for (int i = 0; i < col_num_; ++i) {
+            for (int j = 0; j < row_num_; ++j) {
+                if (board_->at(i)[j] == TILE_STATE::EMPTY) {
+                    continue;
+                }
+                LINE_PROPERTY horizontal_ = Caro::check_line_property(
+                    board_, i, j, win_count, LINE_TYPE::HORIZONTAL
+                );
+                LINE_PROPERTY vertical_ = Caro::check_line_property(
+                    board_, i, j, win_count, LINE_TYPE::VERTICAL
+                );
+                LINE_PROPERTY back_diag_ = Caro::check_line_property(
+                    board_, i, j, win_count, LINE_TYPE::BACK_DIAGONAL
+                );
+                LINE_PROPERTY forward_diag_ = Caro::check_line_property(
+                    board_, i, j, win_count, LINE_TYPE::FORWARD_DIAGONAL
+                );
+            }
+        }
+        return GAME_CHECK::ONGOING;
+    }
+    GAME_CHECK brute_force_check_draw(
+        std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_
+    ) {
+        // Implement the brute force check logic
+        return GAME_CHECK::ONGOING;
+    }
 public:
-    virtual GAME_STATE
+    Ruling() : win_count(0) {}
+    virtual GAME_CHECK
     check_win(
         std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_
     ) = 0;
-    virtual GAME_STATE
+    virtual GAME_CHECK
     check_draw(
         std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_
     ) = 0;
@@ -20,55 +56,64 @@ public:
 
 class Tic_Tac_Toe_Rule : public Ruling {
 public:
-    GAME_STATE
+    Tic_Tac_Toe_Rule() : Ruling() {
+        win_count = 3;
+    }
+    GAME_CHECK
     check_win(
         std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_
     ) override {
         // Implement the logic for checking the winning condition
-        return GAME_STATE::PLAYER1_TURN;
+        return brute_force_check_win(board_);
     }
-    GAME_STATE
+    GAME_CHECK
     check_draw(
         std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_
     ) override {
         // Implement the logic for checking the draw condition
-        return GAME_STATE::PLAYER1_TURN;
+        return brute_force_check_draw(board_);
     }
 };
 
 class Four_Block_1_Rule : public Ruling {
 public:
-    GAME_STATE
+    Four_Block_1_Rule() : Ruling() {
+        win_count = 4;
+    }
+    GAME_CHECK
     check_win(
         std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_
     ) override {
         // Implement the logic for checking the winning condition
-        return GAME_STATE::PLAYER1_TURN;
+        return brute_force_check_win(board_);
     }
-    GAME_STATE
+    GAME_CHECK
     check_draw(
         std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_
     ) override {
         // Implement the logic for checking the draw condition
-        return GAME_STATE::PLAYER1_TURN;
+        return brute_force_check_draw(board_);
     }
 };
 
 class Five_Block_2_Rule : public Ruling {
 public:
-    GAME_STATE
+    Five_Block_2_Rule() : Ruling() {
+        win_count = 5;
+    }
+    GAME_CHECK
     check_win(
         std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_
     ) override {
         // Implement the logic for checking the winning condition
-        return GAME_STATE::PLAYER1_TURN;
+        return brute_force_check_win(board_);
     }
-    GAME_STATE
+    GAME_CHECK
     check_draw(
         std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_
     ) override {
         // Implement the logic for checking the draw condition
-        return GAME_STATE::PLAYER1_TURN;
+        return brute_force_check_draw(board_);
     }
 };
 
@@ -100,23 +145,22 @@ public:
         }
     }
 
-    GAME_STATE
+    GAME_CHECK
     check_end_condition(
-        std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_,
-        GAME_STATE current_state_) 
-    {
-        GAME_STATE ret = current_state_;
+        std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_
+    ) {
+        GAME_CHECK ret = GAME_CHECK::ONGOING;
         if (!ruler) {
-            ret = GAME_STATE::RULE_NOT_FOUND;
+            ret = GAME_CHECK::RULE_NOT_FOUND;
         } else {
-            GAME_STATE anyone_win_ = ruler->check_win(board_);
-            GAME_STATE is_draw_ = ruler->check_draw(board_);
-            if (anyone_win_ != GAME_STATE::PLAYER1_TURN) {
+            GAME_CHECK anyone_win_ = ruler->check_win(board_);
+            GAME_CHECK is_draw_ = ruler->check_draw(board_);
+            if (anyone_win_ != GAME_CHECK::ONGOING) {
                 ret = anyone_win_;
-            } else if (is_draw_ != GAME_STATE::PLAYER1_TURN) {
+            } else if (is_draw_ != GAME_CHECK::ONGOING) {
                 ret = is_draw_;
             } else {
-                ret = current_state_;
+                ret = GAME_CHECK::ONGOING;
             }
         }
         return ret;

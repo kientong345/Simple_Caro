@@ -12,16 +12,16 @@ template <typename T>
 class Player_Context {
 private:
     std::shared_ptr<T> player_info;
-    std::stack<Coordinate> moves_history;
-    std::stack<Coordinate> undone_moves;
+    std::shared_ptr<std::stack<Coordinate>> moves_history;
+    std::shared_ptr<std::stack<Coordinate>> undone_moves;
     std::shared_ptr<std::set<Coordinate>> moves_set;
-    Coordinate last_move;
 
 public:
     Player_Context(const T& info_)
         : player_info(std::make_shared<T>(info_)),
-          moves_set(std::make_shared<std::set<Coordinate>>()),
-          last_move({-1, -1}) {}
+          moves_history(std::make_shared<std::stack<Coordinate>>()),
+          undone_moves(std::make_shared<std::stack<Coordinate>>()),
+          moves_set(std::make_shared<std::set<Coordinate>>()) {}
 
     ~Player_Context() = default;
 
@@ -34,51 +34,57 @@ public:
                     ( moves_set->end() ) ) {
             ret = MOVE_RESULT::ALREADY_OCCUPIED;
         } else {
-            moves_history.push(move_);
+            moves_history->push(move_);
             moves_set->insert(move_);
-            if ( !undone_moves.empty() ) {
-                undone_moves.pop();
+            if ( !undone_moves->empty() ) {
+                undone_moves->pop();
             }
-            last_move = move_;
             ret = MOVE_RESULT::SUCCESS;
         }
         return ret;
     }
 
-    void
+    MOVE_RESULT
     undo() {
-        if ( !moves_history.empty() ) {
-            Coordinate move_ = moves_history.top();
-            moves_history.pop();
-            undone_moves.push(move_);
+        if ( !moves_history->empty() ) {
+            Coordinate move_ = moves_history->top();
+            moves_history->pop();
+            undone_moves->push(move_);
             moves_set->erase(move_);
-            last_move = ( !moves_history.empty() ) ? 
-                moves_history.top() : Coordinate{-1, -1};
+            return MOVE_RESULT::SUCCESS;
+        } else {
+            return MOVE_RESULT::OUT_OF_BOUNDS;
         }
     }
 
-    void
+    MOVE_RESULT
     redo() {
-        if ( !undone_moves.empty() ) {
-            Coordinate move_ = undone_moves.top();
-            undone_moves.pop();
-            moves_history.push(move_);
+        if ( !undone_moves->empty() ) {
+            Coordinate move_ = undone_moves->top();
+            undone_moves->pop();
+            moves_history->push(move_);
             moves_set->insert(move_);
-            last_move = move_;
+            return MOVE_RESULT::SUCCESS;
+        } else {
+            return MOVE_RESULT::OUT_OF_BOUNDS;
         }
     }
 
     void
     reset() {
-        undone_moves = std::stack<Coordinate>(); // Rapidly clear
-        moves_history = std::stack<Coordinate>(); // Rapidly clear
+        undone_moves = std::make_shared<std::stack<Coordinate>>();
+        moves_history = std::make_shared<std::stack<Coordinate>>();
         moves_set->clear();
-        last_move = Coordinate{-1, -1};
     }
 
-    Coordinate
-    get_last_move() const {
-        return last_move;
+    std::shared_ptr<const std::stack<Coordinate>>
+    get_moves_history() const {
+        return moves_history;
+    }
+
+    std::shared_ptr<const std::stack<Coordinate>>
+    get_undone_moves() const {
+        return undone_moves;
     }
     
     std::shared_ptr<const std::set<Coordinate>>
@@ -116,11 +122,24 @@ public:
             ( coord.x >= board->at(0).size() ) ||
             ( coord.y >= board->size()) ) {
             ret = MOVE_RESULT::OUT_OF_BOUNDS;
-        }
-        if (board->at(coord.y)[coord.x] != TILE_STATE::EMPTY) {
+        } else if (board->at(coord.y)[coord.x] != TILE_STATE::EMPTY) {
             ret = MOVE_RESULT::ALREADY_OCCUPIED;
         } else {
             (*board)[coord.y][coord.x] = state;
+            ret = MOVE_RESULT::SUCCESS;
+        }
+        return ret;
+    }
+
+    MOVE_RESULT
+    unset_tile(Coordinate coord) {
+        MOVE_RESULT ret = MOVE_RESULT::SUCCESS;
+        if ( ( coord.x < 0 ) || ( coord.y < 0 ) ||
+            ( coord.x >= board->at(0).size() ) ||
+            ( coord.y >= board->size()) ) {
+            ret = MOVE_RESULT::OUT_OF_BOUNDS;
+        } else {
+            (*board)[coord.y][coord.x] = TILE_STATE::EMPTY;
             ret = MOVE_RESULT::SUCCESS;
         }
         return ret;
