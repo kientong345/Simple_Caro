@@ -144,7 +144,7 @@ private:
             }
             break;
         case LINE_TYPE::VERTICAL:
-            if (x_+2 < col_num_) {
+            if (x_+2 < row_num_) {
                 if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
                     ( board_->at(x_+1)[y_] == TILE_STATE::PLAYER1 ) &&
                     ( board_->at(x_+2)[y_] == TILE_STATE::PLAYER1 ) ) {
@@ -161,7 +161,7 @@ private:
             }
             break;
         case LINE_TYPE::BACK_DIAGONAL:
-            if ( ( x_+2 < col_num_ ) && ( y_-2 >= 0 ) ) {
+            if ( ( x_+2 < row_num_ ) && ( y_-2 >= 0 ) ) {
                 if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
                     ( board_->at(x_+1)[y_-1] == TILE_STATE::PLAYER1 ) &&
                     ( board_->at(x_+2)[y_-2] == TILE_STATE::PLAYER1 ) ) {
@@ -178,7 +178,7 @@ private:
             }
             break;
         case LINE_TYPE::FORWARD_DIAGONAL:
-            if ( ( x_+2 < col_num_ ) && ( y_+2 >= col_num_ ) ) {
+            if ( ( x_+2 < row_num_ ) && ( y_+2 >= col_num_ ) ) {
                 if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
                     ( board_->at(x_+1)[y_+1] == TILE_STATE::PLAYER1 ) &&
                     ( board_->at(x_+2)[y_+2] == TILE_STATE::PLAYER1 ) ) {
@@ -224,7 +224,148 @@ private:
         std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_,
         size_t x_, size_t y_, LINE_TYPE line_type_
     ) override {
-        return LINE_PROPERTY::OTHER;
+        LINE_PROPERTY ret_ = LINE_PROPERTY::OTHER;
+        size_t row_num_ = board_->size();
+        size_t col_num_ = board_->at(0).size();
+
+        switch (line_type_) {
+        case LINE_TYPE::HORIZONTAL:
+            if (y_+3 < col_num_) {
+                if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_)[y_+1] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_)[y_+2] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_)[y_+3] == TILE_STATE::PLAYER1 ) ) {
+                    if ( ( ( y_+4 < col_num_ ) &&
+                        ( board_->at(x_)[y_+4] == TILE_STATE::PLAYER2 ) ) ||
+                        ( ( y_-1 >= 0 ) &&
+                        ( board_->at(x_)[y_-1] == TILE_STATE::PLAYER2 ) ) ) {
+                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_BLOCKED;
+                    } else {
+                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_WITHOUT_BLOCKED;
+                    }
+                } else if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_)[y_+1] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_)[y_+2] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_)[y_+3] == TILE_STATE::PLAYER2 ) ) {
+                    if ( ( ( y_+4 < col_num_ ) &&
+                        ( board_->at(x_)[y_+4] == TILE_STATE::PLAYER1 ) ) ||
+                        ( ( y_-1 >= 0 ) &&
+                        ( board_->at(x_)[y_-1] == TILE_STATE::PLAYER1 ) ) ) {
+                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_BLOCKED;
+                    } else {
+                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_WITHOUT_BLOCKED;
+                    }
+                } else {
+                    ret_ = LINE_PROPERTY::OTHER;
+                }
+            } else {
+                ret_ = LINE_PROPERTY::OTHER;
+            }
+            break;
+        case LINE_TYPE::VERTICAL:
+            if (x_+3 < row_num_) {
+                if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_+1)[y_] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_+2)[y_] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_+3)[y_] == TILE_STATE::PLAYER1 ) ) {
+                    if ( ( ( x_+4 < row_num_ ) &&
+                        ( board_->at(x_+4)[y_] == TILE_STATE::PLAYER2 ) ) ||
+                        ( ( x_-1 >= 0 ) &&
+                        ( board_->at(x_-1)[y_] == TILE_STATE::PLAYER2 ) ) ) {
+                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_BLOCKED;
+                    } else {
+                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_WITHOUT_BLOCKED;
+                    }
+                } else if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_+1)[y_] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_+2)[y_] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_+3)[y_] == TILE_STATE::PLAYER2 ) ) {
+                    if ( ( ( x_+4 < row_num_ ) &&
+                        ( board_->at(x_+4)[y_] == TILE_STATE::PLAYER1 ) ) ||
+                        ( ( x_-1 >= 0 ) &&
+                        ( board_->at(x_-1)[y_] == TILE_STATE::PLAYER1 ) ) ) {
+                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_BLOCKED;
+                    } else {
+                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_WITHOUT_BLOCKED;
+                    }
+                } else {
+                    ret_ = LINE_PROPERTY::OTHER;
+                }
+            } else {
+                ret_ = LINE_PROPERTY::OTHER;
+            }
+            break;
+        case LINE_TYPE::BACK_DIAGONAL:
+            if ( ( x_+3 < row_num_ ) && ( y_-3 >= 0 ) ) {
+                if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_+1)[y_-1] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_+2)[y_-2] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_+3)[y_-3] == TILE_STATE::PLAYER1 ) ) {
+                    if ( ( ( x_+4 < row_num_ ) && ( y_-4 >= 0 ) &&
+                        ( board_->at(x_+4)[y_-4] == TILE_STATE::PLAYER2 ) ) ||
+                        ( ( x_-1 >= 0 ) && ( y_+1 < col_num_ ) &&
+                        ( board_->at(x_-1)[y_+1] == TILE_STATE::PLAYER2 ) ) ) {
+                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_BLOCKED;
+                    } else {
+                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_WITHOUT_BLOCKED;
+                    }
+                } else if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_+1)[y_-1] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_+2)[y_-2] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_+3)[y_-3] == TILE_STATE::PLAYER2 ) ) {
+                    if ( ( ( x_+4 < row_num_ ) && ( y_-4 >= 0 ) &&
+                        ( board_->at(x_+4)[y_-4] == TILE_STATE::PLAYER1 ) ) ||
+                        ( ( x_-1 >= 0 ) && ( y_+1 < col_num_ ) &&
+                        ( board_->at(x_-1)[y_+1] == TILE_STATE::PLAYER1 ) ) ) {
+                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_BLOCKED;
+                    } else {
+                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_WITHOUT_BLOCKED;
+                    }
+                } else {
+                    ret_ = LINE_PROPERTY::OTHER;
+                }
+            } else {
+                ret_ = LINE_PROPERTY::OTHER;
+            }
+            break;
+        case LINE_TYPE::FORWARD_DIAGONAL:
+            if ( ( x_+3 < row_num_ ) && ( y_+3 >= col_num_ ) ) {
+                if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_+1)[y_+1] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_+2)[y_+2] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_+3)[y_+3] == TILE_STATE::PLAYER1 ) ) {
+                    if ( ( ( x_+4 < row_num_ ) && ( y_+4 < col_num_ ) &&
+                        ( board_->at(x_+4)[y_+4] == TILE_STATE::PLAYER2 ) ) ||
+                        ( ( x_-1 >= 0 ) && ( y_-1 >= 0 ) &&
+                        ( board_->at(x_-1)[y_-1] == TILE_STATE::PLAYER2 ) ) ) {
+                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_BLOCKED;
+                    } else {
+                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_WITHOUT_BLOCKED;
+                    }
+                } else if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_+1)[y_+1] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_+2)[y_+2] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_+3)[y_+3] == TILE_STATE::PLAYER2 ) ) {
+                    if ( ( ( x_+4 < row_num_ ) && ( y_+4 < col_num_ ) &&
+                        ( board_->at(x_+4)[y_+4] == TILE_STATE::PLAYER1 ) ) ||
+                        ( ( x_-1 >= 0 ) && ( y_-1 >= 0 ) &&
+                        ( board_->at(x_-1)[y_-1] == TILE_STATE::PLAYER1 ) ) ) {
+                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_BLOCKED;
+                    } else {
+                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_WITHOUT_BLOCKED;
+                    }
+                } else {
+                    ret_ = LINE_PROPERTY::OTHER;
+                }
+            } else {
+                ret_ = LINE_PROPERTY::OTHER;
+            }
+            break;
+        default:
+            ret_ = LINE_PROPERTY::OTHER;
+            break;
+        }
+        return ret_;
     }
 public:
     GAME_CHECK
@@ -249,7 +390,156 @@ private:
         std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_,
         size_t x_, size_t y_, LINE_TYPE line_type_
     ) override {
-        return LINE_PROPERTY::OTHER;
+        LINE_PROPERTY ret_ = LINE_PROPERTY::OTHER;
+        size_t row_num_ = board_->size();
+        size_t col_num_ = board_->at(0).size();
+
+        switch (line_type_) {
+        case LINE_TYPE::HORIZONTAL:
+            if (y_+4 < col_num_) {
+                if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_)[y_+1] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_)[y_+2] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_)[y_+3] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_)[y_+4] == TILE_STATE::PLAYER1 ) ) {
+                    if ( ( ( y_+5 < col_num_ ) &&
+                        ( board_->at(x_)[y_+5] == TILE_STATE::PLAYER2 ) ) &&
+                        ( ( y_-1 >= 0 ) &&
+                        ( board_->at(x_)[y_-1] == TILE_STATE::PLAYER2 ) ) ) {
+                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_BLOCKED;
+                    } else {
+                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_WITHOUT_BLOCKED;
+                    }
+                } else if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_)[y_+1] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_)[y_+2] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_)[y_+3] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_)[y_+4] == TILE_STATE::PLAYER2 ) ) {
+                    if ( ( ( y_+5 < col_num_ ) &&
+                        ( board_->at(x_)[y_+5] == TILE_STATE::PLAYER1 ) ) &&
+                        ( ( y_-1 >= 0 ) &&
+                        ( board_->at(x_)[y_-1] == TILE_STATE::PLAYER1 ) ) ) {
+                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_BLOCKED;
+                    } else {
+                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_WITHOUT_BLOCKED;
+                    }
+                } else {
+                    ret_ = LINE_PROPERTY::OTHER;
+                }
+            } else {
+                ret_ = LINE_PROPERTY::OTHER;
+            }
+            break;
+        case LINE_TYPE::VERTICAL:
+            if (x_+4 < row_num_) {
+                if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_+1)[y_] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_+2)[y_] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_+3)[y_] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_+4)[y_] == TILE_STATE::PLAYER1 ) ) {
+                    if ( ( ( x_+5 < row_num_ ) &&
+                        ( board_->at(x_+5)[y_] == TILE_STATE::PLAYER2 ) ) &&
+                        ( ( x_-1 >= 0 ) &&
+                        ( board_->at(x_-1)[y_] == TILE_STATE::PLAYER2 ) ) ) {
+                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_BLOCKED;
+                    } else {
+                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_WITHOUT_BLOCKED;
+                    }
+                } else if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_+1)[y_] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_+2)[y_] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_+3)[y_] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_+4)[y_] == TILE_STATE::PLAYER2 ) ) {
+                    if ( ( ( x_+5 < row_num_ ) &&
+                        ( board_->at(x_+5)[y_] == TILE_STATE::PLAYER1 ) ) &&
+                        ( ( x_-1 >= 0 ) &&
+                        ( board_->at(x_-1)[y_] == TILE_STATE::PLAYER1 ) ) ) {
+                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_BLOCKED;
+                    } else {
+                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_WITHOUT_BLOCKED;
+                    }
+                } else {
+                    ret_ = LINE_PROPERTY::OTHER;
+                }
+            } else {
+                ret_ = LINE_PROPERTY::OTHER;
+            }
+            break;
+        case LINE_TYPE::BACK_DIAGONAL:
+            if ( ( x_+4 < row_num_ ) && ( y_-4 >= 0 ) ) {
+                if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_+1)[y_-1] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_+2)[y_-2] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_+3)[y_-3] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_+4)[y_-4] == TILE_STATE::PLAYER1 ) ) {
+                    if ( ( ( x_+5 < row_num_ ) && ( y_-5 >= 0 ) &&
+                        ( board_->at(x_+5)[y_-5] == TILE_STATE::PLAYER2 ) ) &&
+                        ( ( x_-1 >= 0 ) && ( y_+1 < col_num_ ) &&
+                        ( board_->at(x_-1)[y_+1] == TILE_STATE::PLAYER2 ) ) ) {
+                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_BLOCKED;
+                    } else {
+                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_WITHOUT_BLOCKED;
+                    }
+                } else if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_+1)[y_-1] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_+2)[y_-2] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_+3)[y_-3] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_+4)[y_-4] == TILE_STATE::PLAYER2 ) ) {
+                    if ( ( ( x_+5 < row_num_ ) && ( y_-5 >= 0 ) &&
+                        ( board_->at(x_+5)[y_-5] == TILE_STATE::PLAYER1 ) ) &&
+                        ( ( x_-1 >= 0 ) && ( y_+1 < col_num_ ) &&
+                        ( board_->at(x_-1)[y_+1] == TILE_STATE::PLAYER1 ) ) ) {
+                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_BLOCKED;
+                    } else {
+                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_WITHOUT_BLOCKED;
+                    }
+                } else {
+                    ret_ = LINE_PROPERTY::OTHER;
+                }
+            } else {
+                ret_ = LINE_PROPERTY::OTHER;
+            }
+            break;
+        case LINE_TYPE::FORWARD_DIAGONAL:
+            if ( ( x_+4 < row_num_ ) && ( y_+4 >= col_num_ ) ) {
+                if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_+1)[y_+1] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_+2)[y_+2] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_+3)[y_+3] == TILE_STATE::PLAYER1 ) &&
+                    ( board_->at(x_+4)[y_+4] == TILE_STATE::PLAYER1 ) ) {
+                    if ( ( ( x_+5 < row_num_ ) && ( y_+5 < col_num_ ) &&
+                        ( board_->at(x_+5)[y_+5] == TILE_STATE::PLAYER2 ) ) &&
+                        ( ( x_-1 >= 0 ) && ( y_-1 >= 0 ) &&
+                        ( board_->at(x_-1)[y_-1] == TILE_STATE::PLAYER2 ) ) ) {
+                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_BLOCKED;
+                    } else {
+                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_WITHOUT_BLOCKED;
+                    }
+                } else if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_+1)[y_+1] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_+2)[y_+2] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_+3)[y_+3] == TILE_STATE::PLAYER2 ) &&
+                    ( board_->at(x_+4)[y_+4] == TILE_STATE::PLAYER2 ) ) {
+                    if ( ( ( x_+5 < row_num_ ) && ( y_+5 < col_num_ ) &&
+                        ( board_->at(x_+5)[y_+5] == TILE_STATE::PLAYER1 ) ) &&
+                        ( ( x_-1 >= 0 ) && ( y_-1 >= 0 ) &&
+                        ( board_->at(x_-1)[y_-1] == TILE_STATE::PLAYER1 ) ) ) {
+                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_BLOCKED;
+                    } else {
+                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_WITHOUT_BLOCKED;
+                    }
+                } else {
+                    ret_ = LINE_PROPERTY::OTHER;
+                }
+            } else {
+                ret_ = LINE_PROPERTY::OTHER;
+            }
+            break;
+        default:
+            ret_ = LINE_PROPERTY::OTHER;
+            break;
+        }
+        return ret_;
     }
 public:
     GAME_CHECK

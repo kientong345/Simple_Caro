@@ -272,6 +272,46 @@ public:
                 state == GAME_STATE::PLAYER2_WON ||
                 state == GAME_STATE::DREW);
     }
+
+    std::shared_ptr<const std::stack<Coordinate>>
+    get_moves_history(PARTICIPANT who_) const {
+        std::shared_ptr<const std::stack<Coordinate>> ret = nullptr;
+        switch (who_) {
+        case PARTICIPANT::PLAYER1:
+            if (player1) {
+                ret = player1->get_moves_history();
+            }
+            break;
+        case PARTICIPANT::PLAYER2:
+            if (player2) {
+                ret = player2->get_moves_history();
+            }
+            break;
+        default:
+            break;
+        }
+        return ret;
+    }
+
+    std::shared_ptr<const std::stack<Coordinate>>
+    get_undone_moves(PARTICIPANT who_) const {
+        std::shared_ptr<const std::stack<Coordinate>> ret = nullptr;
+        switch (who_) {
+        case PARTICIPANT::PLAYER1:
+            if (player1) {
+                ret = player1->get_undone_moves();
+            }
+            break;
+        case PARTICIPANT::PLAYER2:
+            if (player2) {
+                ret = player2->get_undone_moves();
+            }
+            break;
+        default:
+            break;
+        }
+        return ret;
+    }
 };
 
 #endif /* __SIMPLE_CARO_H__ */
