@@ -2,10 +2,10 @@
 #include <iostream>
 #include <string>
 
-void print_board(const std::vector<std::vector<TILE_STATE>>& board) {
-    for (const auto& row : board) {
-        for (const auto& tile : row) {
-            switch (tile) {
+void print_board(std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board) {
+    for (int i = 0; i < board->size(); ++i) {
+        for (int j = 0; j < board->at(i).size(); ++j) {
+            switch (board->at(i)[j]) {
             case TILE_STATE::EMPTY:
                 std::cout << ". ";
                 break;
@@ -19,6 +19,7 @@ void print_board(const std::vector<std::vector<TILE_STATE>>& board) {
         }
         std::cout << std::endl;
     }
+    std::cout << std::endl;
 }
 
 int main() {
@@ -58,7 +59,7 @@ int main() {
         default:
             break;
         }
-        print_board(*game.get_board());
+        print_board(game.get_board());
     }
 
     switch (game.get_state()) {
