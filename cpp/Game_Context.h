@@ -8,6 +8,8 @@
 #include <set>
 #include <memory>
 
+namespace Caro {
+
 template <typename T>
 class Player_Context {
 private:
@@ -71,7 +73,7 @@ public:
     }
 
     void
-    reset() {
+    reset_context() {
         undone_moves = std::make_shared<std::stack<Coordinate>>();
         moves_history = std::make_shared<std::stack<Coordinate>>();
         moves_set->clear();
@@ -146,9 +148,11 @@ public:
     }
 
     void
-    reset() {
+    reset_context() {
         board->clear();
     }
 };
+
+} // namespace Caro
 
 #endif /* __GAME_CONTEXT_H__ */

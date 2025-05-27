@@ -2,17 +2,17 @@
 #include <iostream>
 #include <string>
 
-void print_board(std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board) {
+void print_board(std::shared_ptr<const std::vector<std::vector<Caro::TILE_STATE>>> board) {
     for (int i = 0; i < board->size(); ++i) {
         for (int j = 0; j < board->at(i).size(); ++j) {
             switch (board->at(i)[j]) {
-            case TILE_STATE::EMPTY:
+            case Caro::TILE_STATE::EMPTY:
                 std::cout << ". ";
                 break;
-            case TILE_STATE::PLAYER1:
+            case Caro::TILE_STATE::PLAYER1:
                 std::cout << "X ";
                 break;
-            case TILE_STATE::PLAYER2:
+            case Caro::TILE_STATE::PLAYER2:
                 std::cout << "O ";
                 break;
             }
@@ -23,36 +23,36 @@ void print_board(std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> boa
 }
 
 int main() {
-    Simple_Caro<std::string> game;
+    Caro::Simple_Caro<std::string> game;
 
     std::string player1_info = "Me";
     std::string player2_info = "Computer";
 
     game.set_board_size(3, 3);
     
-    game.register_player_info(PARTICIPANT::PLAYER1, player1_info);
-    game.register_player_info(PARTICIPANT::PLAYER2, player2_info);
+    game.register_player_info(Caro::PARTICIPANT::PLAYER1, player1_info);
+    game.register_player_info(Caro::PARTICIPANT::PLAYER2, player2_info);
 
-    game.set_rule(RULE_TYPE::TIC_TAC_TOE);
+    game.set_rule(Caro::RULE_TYPE::TIC_TAC_TOE);
 
-    game.start(GAME_STATE::PLAYER1_TURN);
+    game.start(Caro::GAME_STATE::PLAYER1_TURN);
     
     while (!game.is_over()) {
-        Coordinate move;
-        GAME_STATE game_state = game.get_state();
+        Caro::Coordinate move;
+        Caro::GAME_STATE game_state = game.get_state();
 
         switch (game_state) {
-        case GAME_STATE::PLAYER1_TURN:
+        case Caro::GAME_STATE::PLAYER1_TURN:
             std::cout << "Player1 move (x y): ";
             std::cin >> move.x >> move.y;
-            if ((game.player_move(PARTICIPANT::PLAYER1, move) == MOVE_RESULT::SUCCESS)) {
+            if ((game.player_move(Caro::PARTICIPANT::PLAYER1, move) == Caro::MOVE_RESULT::SUCCESS)) {
                 game.switch_turn();
             }
             break;
-        case GAME_STATE::PLAYER2_TURN:
+        case Caro::GAME_STATE::PLAYER2_TURN:
             std::cout << "Player2 move (x y): ";
             std::cin >> move.x >> move.y;
-            if ((game.player_move(PARTICIPANT::PLAYER2, move) == MOVE_RESULT::SUCCESS)) {
+            if ((game.player_move(Caro::PARTICIPANT::PLAYER2, move) == Caro::MOVE_RESULT::SUCCESS)) {
                 game.switch_turn();
             }
             break;
@@ -63,13 +63,13 @@ int main() {
     }
 
     switch (game.get_state()) {
-    case GAME_STATE::PLAYER1_WON:
+    case Caro::GAME_STATE::PLAYER1_WON:
         std::cout << "Player 1 wins!" << std::endl;
         break;
-    case GAME_STATE::PLAYER2_WON:
+    case Caro::GAME_STATE::PLAYER2_WON:
         std::cout << "Player 2 wins!" << std::endl;
         break;
-    case GAME_STATE::DREW:
+    case Caro::GAME_STATE::DREW:
         std::cout << "It's a draw!" << std::endl;
         break;
     default:

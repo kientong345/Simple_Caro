@@ -6,6 +6,8 @@
 
 #include <memory>
 
+namespace Caro {
+
 class Ruling {
 protected:
     // uint32_t win_count;
@@ -607,5 +609,7 @@ public:
         return ret;
     }
 };
+
+} // namespace Caro
 
 #endif /* __GAME_JUDGE_H__ */

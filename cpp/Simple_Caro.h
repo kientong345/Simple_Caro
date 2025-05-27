@@ -7,6 +7,8 @@
 
 #include <memory>
 
+namespace Caro {
+
 template <typename T>
 class Simple_Caro {
 private:
@@ -68,11 +70,30 @@ public:
     }
 
     void
+    unregister_player_info(PARTICIPANT who_) {
+        switch (who_) {
+        case PARTICIPANT::PLAYER1:
+            player1 = nullptr;
+            break;
+        case PARTICIPANT::PLAYER2:
+            player2 = nullptr;
+            break;
+        default:
+            break;
+        }
+    }
+
+    void
     set_rule(RULE_TYPE rule_) {
         if (!judge) {
             judge = std::make_shared<Game_Judge>();
         }
         judge->set_rule(rule_);
+    }
+
+    void
+    unset_rule() {
+        judge = nullptr;
     }
 
     void
@@ -94,17 +115,17 @@ public:
     }
 
     void
-    restart(GAME_STATE first_turn_ = GAME_STATE::PLAYER1_TURN) {
+    stop(GAME_STATE first_turn_ = GAME_STATE::PLAYER1_TURN) {
         if (player1) {
-            player1->reset();
+            player1->reset_context();
         }
         if (player2) {
-            player2->reset();
+            player2->reset_context();
         }
         if (board) {
-            board->reset();
+            board->reset_context();
         }
-        state = first_turn_;
+        state = GAME_STATE::NOT_INPROGRESS;
     }
 
     std::shared_ptr<T>
@@ -313,5 +334,7 @@ public:
         return ret;
     }
 };
+
+} // namespace Caro
 
 #endif /* __SIMPLE_CARO_H__ */

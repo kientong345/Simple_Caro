@@ -3,6 +3,8 @@
 
 #include <cstdint>
 
+namespace Caro {
+
 struct Coordinate {
     int64_t x;
     int64_t y;
@@ -67,5 +69,7 @@ enum class LINE_PROPERTY {
     PLAYER2_SEQUENCE_BLOCKED,
     OTHER,
 };
+
+} // namespace Caro
 
 #endif /* __COMMON_H__ */
