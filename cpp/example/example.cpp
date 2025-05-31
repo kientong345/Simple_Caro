@@ -1,5 +1,5 @@
-#include "Simple_Caro.h"
-#include "../cli_framework/cli_graphic.h"
+#include "../lib/simple_caro/Simple_Caro.h"
+#include "../lib/caro_cli/cli_graphic.h"
 #include <iostream>
 #include <string>
 #include <atomic>
