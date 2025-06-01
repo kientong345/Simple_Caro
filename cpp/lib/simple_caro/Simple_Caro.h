@@ -195,7 +195,7 @@ public:
             }
             break;
         case PARTICIPANT::PLAYER2:
-            if (state != GAME_STATE::PLAYER1_TURN) {
+            if (state != GAME_STATE::PLAYER2_TURN) {
                 ret = MOVE_RESULT::WRONG_TURN;
             } else {
                 ret = player2->undo();
@@ -234,7 +234,7 @@ public:
             }
             break;
         case PARTICIPANT::PLAYER2:
-            if (state != GAME_STATE::PLAYER1_TURN) {
+            if (state != GAME_STATE::PLAYER2_TURN) {
                 ret = MOVE_RESULT::WRONG_TURN;
             } else {
                 ret = player2->redo();

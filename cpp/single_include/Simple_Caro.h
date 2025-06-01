@@ -199,30 +199,38 @@ public:
     }
 
     MOVE_RESULT
-    set_tile(Coordinate coord, TILE_STATE state) {
+    set_tile(Coordinate pos_, TILE_STATE state) {
         MOVE_RESULT ret = MOVE_RESULT::SUCCESS;
-        if ( ( coord.x < 0 ) || ( coord.y < 0 ) ||
-            ( coord.x >= board->size() ) ||
-            ( coord.y >= board->at(0).size()) ) {
+        bool board_has_tiles = (board->size() > 0) &&
+                               (board->at(0).size() > 0);
+        bool pos_on_board = (board_has_tiles) &&
+            (pos_.x >= 0) && (pos_.y >= 0) &&
+            (pos_.x < board->size()) &&
+            (pos_.y < board->at(0).size());
+        if ( !pos_on_board ) {
             ret = MOVE_RESULT::OUT_OF_BOUNDS;
-        } else if (board->at(coord.x)[coord.y] != TILE_STATE::EMPTY) {
+        } else if (board->at(pos_.x)[pos_.y] != TILE_STATE::EMPTY) {
             ret = MOVE_RESULT::ALREADY_OCCUPIED;
         } else {
-            (*board)[coord.x][coord.y] = state;
+            (*board)[pos_.x][pos_.y] = state;
             ret = MOVE_RESULT::SUCCESS;
         }
         return ret;
     }
 
     MOVE_RESULT
-    unset_tile(Coordinate coord) {
+    unset_tile(Coordinate pos_) {
         MOVE_RESULT ret = MOVE_RESULT::SUCCESS;
-        if ( ( coord.x < 0 ) || ( coord.y < 0 ) ||
-            ( coord.x >= board->size() ) ||
-            ( coord.y >= board->at(0).size()) ) {
+        bool board_has_tiles = (board->size() > 0) &&
+                               (board->at(0).size() > 0);
+        bool pos_on_board = (board_has_tiles) &&
+            (pos_.x >= 0) && (pos_.y >= 0) &&
+            (pos_.x < board->size()) &&
+            (pos_.y < board->at(0).size());
+        if ( !pos_on_board ) {
             ret = MOVE_RESULT::OUT_OF_BOUNDS;
         } else {
-            (*board)[coord.x][coord.y] = TILE_STATE::EMPTY;
+            (*board)[pos_.x][pos_.y] = TILE_STATE::EMPTY;
             ret = MOVE_RESULT::SUCCESS;
         }
         return ret;
@@ -406,7 +414,7 @@ private:
             }
             break;
         case LINE_TYPE::FORWARD_DIAGONAL:
-            if ( ( x_+2 < row_num_ ) && ( y_+2 >= col_num_ ) ) {
+            if ( ( x_+2 < row_num_ ) && ( y_+2 < col_num_ ) ) {
                 if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
                     ( board_->at(x_+1)[y_+1] == TILE_STATE::PLAYER1 ) &&
                     ( board_->at(x_+2)[y_+2] == TILE_STATE::PLAYER1 ) ) {
@@ -557,7 +565,7 @@ private:
             }
             break;
         case LINE_TYPE::FORWARD_DIAGONAL:
-            if ( ( x_+3 < row_num_ ) && ( y_+3 >= col_num_ ) ) {
+            if ( ( x_+3 < row_num_ ) && ( y_+3 < col_num_ ) ) {
                 if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
                     ( board_->at(x_+1)[y_+1] == TILE_STATE::PLAYER1 ) &&
                     ( board_->at(x_+2)[y_+2] == TILE_STATE::PLAYER1 ) &&
@@ -729,7 +737,7 @@ private:
             }
             break;
         case LINE_TYPE::FORWARD_DIAGONAL:
-            if ( ( x_+4 < row_num_ ) && ( y_+4 >= col_num_ ) ) {
+            if ( ( x_+4 < row_num_ ) && ( y_+4 < col_num_ ) ) {
                 if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
                     ( board_->at(x_+1)[y_+1] == TILE_STATE::PLAYER1 ) &&
                     ( board_->at(x_+2)[y_+2] == TILE_STATE::PLAYER1 ) &&
@@ -1022,7 +1030,7 @@ public:
             }
             break;
         case PARTICIPANT::PLAYER2:
-            if (state != GAME_STATE::PLAYER1_TURN) {
+            if (state != GAME_STATE::PLAYER2_TURN) {
                 ret = MOVE_RESULT::WRONG_TURN;
             } else {
                 ret = player2->undo();
@@ -1061,7 +1069,7 @@ public:
             }
             break;
         case PARTICIPANT::PLAYER2:
-            if (state != GAME_STATE::PLAYER1_TURN) {
+            if (state != GAME_STATE::PLAYER2_TURN) {
                 ret = MOVE_RESULT::WRONG_TURN;
             } else {
                 ret = player2->redo();

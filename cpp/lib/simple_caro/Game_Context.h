@@ -135,30 +135,38 @@ public:
     }
 
     MOVE_RESULT
-    set_tile(Coordinate coord, TILE_STATE state) {
+    set_tile(Coordinate pos_, TILE_STATE state) {
         MOVE_RESULT ret = MOVE_RESULT::SUCCESS;
-        if ( ( coord.x < 0 ) || ( coord.y < 0 ) ||
-            ( coord.x >= board->size() ) ||
-            ( coord.y >= board->at(0).size()) ) {
+        bool board_has_tiles = (board->size() > 0) &&
+                               (board->at(0).size() > 0);
+        bool pos_on_board = (board_has_tiles) &&
+            (pos_.x >= 0) && (pos_.y >= 0) &&
+            (pos_.x < board->size()) &&
+            (pos_.y < board->at(0).size());
+        if ( !pos_on_board ) {
             ret = MOVE_RESULT::OUT_OF_BOUNDS;
-        } else if (board->at(coord.x)[coord.y] != TILE_STATE::EMPTY) {
+        } else if (board->at(pos_.x)[pos_.y] != TILE_STATE::EMPTY) {
             ret = MOVE_RESULT::ALREADY_OCCUPIED;
         } else {
-            (*board)[coord.x][coord.y] = state;
+            (*board)[pos_.x][pos_.y] = state;
             ret = MOVE_RESULT::SUCCESS;
         }
         return ret;
     }
 
     MOVE_RESULT
-    unset_tile(Coordinate coord) {
+    unset_tile(Coordinate pos_) {
         MOVE_RESULT ret = MOVE_RESULT::SUCCESS;
-        if ( ( coord.x < 0 ) || ( coord.y < 0 ) ||
-            ( coord.x >= board->size() ) ||
-            ( coord.y >= board->at(0).size()) ) {
+        bool board_has_tiles = (board->size() > 0) &&
+                               (board->at(0).size() > 0);
+        bool pos_on_board = (board_has_tiles) &&
+            (pos_.x >= 0) && (pos_.y >= 0) &&
+            (pos_.x < board->size()) &&
+            (pos_.y < board->at(0).size());
+        if ( !pos_on_board ) {
             ret = MOVE_RESULT::OUT_OF_BOUNDS;
         } else {
-            (*board)[coord.x][coord.y] = TILE_STATE::EMPTY;
+            (*board)[pos_.x][pos_.y] = TILE_STATE::EMPTY;
             ret = MOVE_RESULT::SUCCESS;
         }
         return ret;

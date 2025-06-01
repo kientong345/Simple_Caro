@@ -180,7 +180,7 @@ private:
             }
             break;
         case LINE_TYPE::FORWARD_DIAGONAL:
-            if ( ( x_+2 < row_num_ ) && ( y_+2 >= col_num_ ) ) {
+            if ( ( x_+2 < row_num_ ) && ( y_+2 < col_num_ ) ) {
                 if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
                     ( board_->at(x_+1)[y_+1] == TILE_STATE::PLAYER1 ) &&
                     ( board_->at(x_+2)[y_+2] == TILE_STATE::PLAYER1 ) ) {
@@ -331,7 +331,7 @@ private:
             }
             break;
         case LINE_TYPE::FORWARD_DIAGONAL:
-            if ( ( x_+3 < row_num_ ) && ( y_+3 >= col_num_ ) ) {
+            if ( ( x_+3 < row_num_ ) && ( y_+3 < col_num_ ) ) {
                 if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
                     ( board_->at(x_+1)[y_+1] == TILE_STATE::PLAYER1 ) &&
                     ( board_->at(x_+2)[y_+2] == TILE_STATE::PLAYER1 ) &&
@@ -503,7 +503,7 @@ private:
             }
             break;
         case LINE_TYPE::FORWARD_DIAGONAL:
-            if ( ( x_+4 < row_num_ ) && ( y_+4 >= col_num_ ) ) {
+            if ( ( x_+4 < row_num_ ) && ( y_+4 < col_num_ ) ) {
                 if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
                     ( board_->at(x_+1)[y_+1] == TILE_STATE::PLAYER1 ) &&
                     ( board_->at(x_+2)[y_+2] == TILE_STATE::PLAYER1 ) &&
