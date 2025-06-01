@@ -1,4 +1,5 @@
 #include "../lib/simple_caro/Simple_Caro.h"
+// #include "../single_include/Simple_Caro.h"
 #include "../lib/caro_cli/cli_graphic.h"
 #include <iostream>
 #include <string>
@@ -8,7 +9,7 @@ void print_match();
 void handle_player_input();
 
 Cli_Graphic cli(COLOR_WHITE, COLOR_BLACK);
-Caro::Simple_Caro<std::string> game;
+Caro::Simple_Caro game;
 struct Pos {
     int rowpos;
     int colpos;
@@ -27,8 +28,8 @@ int main() {
 
     game.set_board_size(21, 34);
     
-    game.register_player_info(Caro::PARTICIPANT::PLAYER1, player1_info);
-    game.register_player_info(Caro::PARTICIPANT::PLAYER2, player2_info);
+    game.register_player_info<std::string>(Caro::PARTICIPANT::PLAYER1, player1_info);
+    game.register_player_info<std::string>(Caro::PARTICIPANT::PLAYER2, player2_info);
 
     game.set_rule(Caro::RULE_TYPE::FIVE_BLOCK_2);
 

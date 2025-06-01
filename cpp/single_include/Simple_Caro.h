@@ -3,9 +3,12 @@
 
 #include <cstdint>
 #include <vector>
-#include <stack>
 #include <set>
 #include <memory>
+#if __cplusplus >= 201703L
+#include <any>
+#else
+#endif //  __cplusplus >= 201703L
 
 namespace Caro {
 
@@ -74,20 +77,19 @@ enum class LINE_PROPERTY {
     OTHER,
 };
 
-template <typename T>
 class Player_Context {
 private:
-    std::shared_ptr<T> player_info;
-    std::shared_ptr<std::stack<Coordinate>> moves_history;
-    std::shared_ptr<std::stack<Coordinate>> undone_moves;
-    std::shared_ptr<std::set<Coordinate>> moves_set;
+#if __cplusplus >= 201703L
+    std::any player_info;
+#else
+    void* player_info;
+#endif //  __cplusplus >= 201703L
+    std::vector<Coordinate> moves_history;
+    std::vector<Coordinate> undone_moves;
+    std::set<Coordinate> moves_set;
 
 public:
-    Player_Context(const T& info_)
-        : player_info(std::make_shared<T>(info_)),
-          moves_history(std::make_shared<std::stack<Coordinate>>()),
-          undone_moves(std::make_shared<std::stack<Coordinate>>()),
-          moves_set(std::make_shared<std::set<Coordinate>>()) {}
+    Player_Context() : player_info(nullptr) {}
 
     ~Player_Context() = default;
 
@@ -96,14 +98,14 @@ public:
         MOVE_RESULT ret = MOVE_RESULT::SUCCESS;
         if ( ( move_.x < 0 ) || ( move_.y < 0 ) ) {
             ret = MOVE_RESULT::OUT_OF_BOUNDS;
-        } else if ( ( moves_set->find(move_) ) != 
-                    ( moves_set->end() ) ) {
+        } else if ( ( moves_set.find(move_) ) != 
+                    ( moves_set.end() ) ) {
             ret = MOVE_RESULT::ALREADY_OCCUPIED;
         } else {
-            moves_history->push(move_);
-            moves_set->insert(move_);
-            if ( !undone_moves->empty() ) {
-                undone_moves->pop();
+            moves_history.push_back(move_);
+            moves_set.insert(move_);
+            if ( !undone_moves.empty() ) {
+                undone_moves.pop_back();
             }
             ret = MOVE_RESULT::SUCCESS;
         }
@@ -112,11 +114,11 @@ public:
 
     MOVE_RESULT
     undo() {
-        if ( !moves_history->empty() ) {
-            Coordinate move_ = moves_history->top();
-            moves_history->pop();
-            undone_moves->push(move_);
-            moves_set->erase(move_);
+        if ( !moves_history.empty() ) {
+            Coordinate move_ = moves_history.back();
+            moves_history.pop_back();
+            undone_moves.push_back(move_);
+            moves_set.erase(move_);
             return MOVE_RESULT::SUCCESS;
         } else {
             return MOVE_RESULT::OUT_OF_BOUNDS;
@@ -125,11 +127,11 @@ public:
 
     MOVE_RESULT
     redo() {
-        if ( !undone_moves->empty() ) {
-            Coordinate move_ = undone_moves->top();
-            undone_moves->pop();
-            moves_history->push(move_);
-            moves_set->insert(move_);
+        if ( !undone_moves.empty() ) {
+            Coordinate move_ = undone_moves.back();
+            undone_moves.pop_back();
+            moves_history.push_back(move_);
+            moves_set.insert(move_);
             return MOVE_RESULT::SUCCESS;
         } else {
             return MOVE_RESULT::OUT_OF_BOUNDS;
@@ -138,29 +140,44 @@ public:
 
     void
     reset_context() {
-        undone_moves = std::make_shared<std::stack<Coordinate>>();
-        moves_history = std::make_shared<std::stack<Coordinate>>();
-        moves_set->clear();
+        undone_moves.clear();
+        moves_history.clear();
+        moves_set.clear();
     }
 
-    std::shared_ptr<const std::stack<Coordinate>>
+    const std::vector<Coordinate>
     get_moves_history() const {
         return moves_history;
     }
 
-    std::shared_ptr<const std::stack<Coordinate>>
+    const std::vector<Coordinate>
     get_undone_moves() const {
         return undone_moves;
     }
     
-    std::shared_ptr<const std::set<Coordinate>>
+    const std::set<Coordinate>
     get_moves_set() const {
         return moves_set;
     }
 
-    std::shared_ptr<T>
-    info() const {
-        return player_info;
+    template<typename T>
+    void
+    make_info(const T& info_) {
+#if __cplusplus >= 201703L
+        player_info = std::make_any<T>(info_);
+#else
+        player_info = new T(info_);
+#endif //  __cplusplus >= 201703L
+    }
+
+    template<typename T>
+    T*
+    try_access_info() {
+#if __cplusplus >= 201703L
+        return std::any_cast<T>(&player_info);
+#else
+    return static_cast<T*>(player_info);
+#endif //  __cplusplus >= 201703L
     }
 };
 
@@ -819,13 +836,12 @@ public:
     }
 };
 
-template <typename T>
 class Simple_Caro {
 private:
-    std::shared_ptr<Player_Context<T>> player1;
-    std::shared_ptr<Player_Context<T>> player2;
-    std::shared_ptr<Board_Context> board;
-    std::shared_ptr<Game_Judge> judge;
+    std::unique_ptr<Player_Context> player1;
+    std::unique_ptr<Player_Context> player2;
+    std::unique_ptr<Board_Context> board;
+    std::unique_ptr<Game_Judge> judge;
     GAME_STATE state;
 
     void
@@ -860,43 +876,58 @@ public:
 
     ~Simple_Caro() = default;
 
+    template <typename T>
+    void
+    register_player_info(PARTICIPANT who_,
+                        const T& player_info_) {
+        switch (who_) {
+        case PARTICIPANT::PLAYER1:
+            if (!player1) {
+                player1 = std::make_unique<Player_Context>();
+            }
+            player1->make_info<T>(player_info_);
+            break;
+        case PARTICIPANT::PLAYER2:
+            if (!player2) {
+                player2 = std::make_unique<Player_Context>();
+            }
+            player2->make_info<T>(player_info_);
+            break;
+        default:
+            break;
+        }
+    }
+
+    template <typename T>
+    T*
+    access_player_info(PARTICIPANT who_) {
+        T* ret = nullptr;
+        switch (who_) {
+        case PARTICIPANT::PLAYER1:
+            if (player1) {
+                ret = player1->try_access_info<T>();
+            }
+            break;
+        case PARTICIPANT::PLAYER2:
+            if (player2) {
+                ret = player2->try_access_info<T>();
+            }
+            break;
+        default:
+            break;
+        }
+        return ret;
+    }
+
     void
     set_board_size(int32_t width_, int32_t height_) {
-        board = std::make_shared<Board_Context>(width_, height_);
-    }
-
-    void
-    register_player_info(PARTICIPANT who_, const T& player_info_) {
-        switch (who_) {
-        case PARTICIPANT::PLAYER1:
-            player1 = std::make_shared<Player_Context<T>>(player_info_);
-            break;
-        case PARTICIPANT::PLAYER2:
-            player2 = std::make_shared<Player_Context<T>>(player_info_);
-            break;
-        default:
-            break;
-        }
-    }
-
-    void
-    unregister_player_info(PARTICIPANT who_) {
-        switch (who_) {
-        case PARTICIPANT::PLAYER1:
-            player1 = nullptr;
-            break;
-        case PARTICIPANT::PLAYER2:
-            player2 = nullptr;
-            break;
-        default:
-            break;
-        }
+        board = std::make_unique<Board_Context>(width_, height_);
     }
 
     void
     set_rule(RULE_TYPE rule_) {
         if (!judge) {
-            judge = std::make_shared<Game_Judge>();
+            judge = std::make_unique<Game_Judge>();
         }
         judge->set_rule(rule_);
     }
@@ -909,16 +940,16 @@ public:
     void
     start(GAME_STATE first_turn_ = GAME_STATE::PLAYER1_TURN) {
         if (!player1) {
-            player1 = std::make_shared<Player_Context<T>>(nullptr);
+            player1 = std::make_unique<Player_Context>();
         }
         if (!player2) {
-            player2 = std::make_shared<Player_Context<T>>(nullptr);
+            player2 = std::make_unique<Player_Context>();
         }
         if (!board) {
-            board = std::make_shared<Board_Context>(1000, 1000);
+            board = std::make_unique<Board_Context>(1000, 1000);
         }
         if (!judge) {
-            judge = std::make_shared<Game_Judge>();
+            judge = std::make_unique<Game_Judge>();
             judge->set_rule(RULE_TYPE::FOUR_BLOCK_1);
         }
         state = first_turn_;
@@ -936,27 +967,6 @@ public:
             board->reset_context();
         }
         state = GAME_STATE::NOT_INPROGRESS;
-    }
-
-    std::shared_ptr<T>
-    mutable_player_info(PARTICIPANT who_) {
-        std::shared_ptr<T> ret = nullptr;
-        switch (who_) {
-        case PARTICIPANT::PLAYER1:
-            if (player1) {
-                ret = player1->info();
-            }
-            break;
-        case PARTICIPANT::PLAYER2:
-            if (player2) {
-                ret = player2->info();
-            }
-            break;
-        default:
-            ret = nullptr;
-            break;
-        }
-        return ret;
     }
 
     MOVE_RESULT
@@ -1007,7 +1017,7 @@ public:
                 if (ret == MOVE_RESULT::SUCCESS) {
                     ret = board->unset_tile(player1
                                             ->get_undone_moves()
-                                            ->top());
+                                            .back());
                 }
             }
             break;
@@ -1019,7 +1029,7 @@ public:
                 if (ret == MOVE_RESULT::SUCCESS) {
                     ret = board->unset_tile(player2
                                             ->get_undone_moves()
-                                            ->top());
+                                            .back());
                 }
             }
             break;
@@ -1045,7 +1055,7 @@ public:
                 if (ret == MOVE_RESULT::SUCCESS) {
                     ret = board->set_tile(player1
                                         ->get_moves_history()
-                                        ->top(),
+                                        .back(),
                                         TILE_STATE::PLAYER1);
                 }
             }
@@ -1058,7 +1068,7 @@ public:
                 if (ret == MOVE_RESULT::SUCCESS) {
                     ret = board->set_tile(player2
                                         ->get_moves_history()
-                                        ->top(),
+                                        .back(),
                                         TILE_STATE::PLAYER2);
                 }
             }
@@ -1104,18 +1114,18 @@ public:
                 state == GAME_STATE::DREW);
     }
 
-    std::shared_ptr<const std::stack<Coordinate>>
+    const std::vector<Coordinate>
     get_moves_history(PARTICIPANT who_) const {
-        std::shared_ptr<const std::stack<Coordinate>> ret = nullptr;
+        std::vector<Coordinate> ret;
         switch (who_) {
         case PARTICIPANT::PLAYER1:
             if (player1) {
-                ret = player1->get_moves_history();
+                ret = std::move(player1->get_moves_history());
             }
             break;
         case PARTICIPANT::PLAYER2:
             if (player2) {
-                ret = player2->get_moves_history();
+                ret = std::move(player2->get_moves_history());
             }
             break;
         default:
@@ -1124,18 +1134,18 @@ public:
         return ret;
     }
 
-    std::shared_ptr<const std::stack<Coordinate>>
+    const std::vector<Coordinate>
     get_undone_moves(PARTICIPANT who_) const {
-        std::shared_ptr<const std::stack<Coordinate>> ret = nullptr;
+        std::vector<Coordinate> ret;
         switch (who_) {
         case PARTICIPANT::PLAYER1:
             if (player1) {
-                ret = player1->get_undone_moves();
+                ret = std::move(player1->get_undone_moves());
             }
             break;
         case PARTICIPANT::PLAYER2:
             if (player2) {
-                ret = player2->get_undone_moves();
+                ret = std::move(player2->get_undone_moves());
             }
             break;
         default:

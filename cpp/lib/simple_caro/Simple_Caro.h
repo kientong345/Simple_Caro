@@ -9,13 +9,12 @@
 
 namespace Caro {
 
-template <typename T>
 class Simple_Caro {
 private:
-    std::shared_ptr<Player_Context<T>> player1;
-    std::shared_ptr<Player_Context<T>> player2;
-    std::shared_ptr<Board_Context> board;
-    std::shared_ptr<Game_Judge> judge;
+    std::unique_ptr<Player_Context> player1;
+    std::unique_ptr<Player_Context> player2;
+    std::unique_ptr<Board_Context> board;
+    std::unique_ptr<Game_Judge> judge;
     GAME_STATE state;
 
     void
@@ -50,43 +49,58 @@ public:
 
     ~Simple_Caro() = default;
 
+    template <typename T>
+    void
+    register_player_info(PARTICIPANT who_,
+                        const T& player_info_) {
+        switch (who_) {
+        case PARTICIPANT::PLAYER1:
+            if (!player1) {
+                player1 = std::make_unique<Player_Context>();
+            }
+            player1->make_info<T>(player_info_);
+            break;
+        case PARTICIPANT::PLAYER2:
+            if (!player2) {
+                player2 = std::make_unique<Player_Context>();
+            }
+            player2->make_info<T>(player_info_);
+            break;
+        default:
+            break;
+        }
+    }
+
+    template <typename T>
+    T*
+    access_player_info(PARTICIPANT who_) {
+        T* ret = nullptr;
+        switch (who_) {
+        case PARTICIPANT::PLAYER1:
+            if (player1) {
+                ret = player1->try_access_info<T>();
+            }
+            break;
+        case PARTICIPANT::PLAYER2:
+            if (player2) {
+                ret = player2->try_access_info<T>();
+            }
+            break;
+        default:
+            break;
+        }
+        return ret;
+    }
+
     void
     set_board_size(int32_t width_, int32_t height_) {
-        board = std::make_shared<Board_Context>(width_, height_);
-    }
-
-    void
-    register_player_info(PARTICIPANT who_, const T& player_info_) {
-        switch (who_) {
-        case PARTICIPANT::PLAYER1:
-            player1 = std::make_shared<Player_Context<T>>(player_info_);
-            break;
-        case PARTICIPANT::PLAYER2:
-            player2 = std::make_shared<Player_Context<T>>(player_info_);
-            break;
-        default:
-            break;
-        }
-    }
-
-    void
-    unregister_player_info(PARTICIPANT who_) {
-        switch (who_) {
-        case PARTICIPANT::PLAYER1:
-            player1 = nullptr;
-            break;
-        case PARTICIPANT::PLAYER2:
-            player2 = nullptr;
-            break;
-        default:
-            break;
-        }
+        board = std::make_unique<Board_Context>(width_, height_);
     }
 
     void
     set_rule(RULE_TYPE rule_) {
         if (!judge) {
-            judge = std::make_shared<Game_Judge>();
+            judge = std::make_unique<Game_Judge>();
         }
         judge->set_rule(rule_);
     }
@@ -99,16 +113,16 @@ public:
     void
     start(GAME_STATE first_turn_ = GAME_STATE::PLAYER1_TURN) {
         if (!player1) {
-            player1 = std::make_shared<Player_Context<T>>(nullptr);
+            player1 = std::make_unique<Player_Context>();
         }
         if (!player2) {
-            player2 = std::make_shared<Player_Context<T>>(nullptr);
+            player2 = std::make_unique<Player_Context>();
         }
         if (!board) {
-            board = std::make_shared<Board_Context>(1000, 1000);
+            board = std::make_unique<Board_Context>(1000, 1000);
         }
         if (!judge) {
-            judge = std::make_shared<Game_Judge>();
+            judge = std::make_unique<Game_Judge>();
             judge->set_rule(RULE_TYPE::FOUR_BLOCK_1);
         }
         state = first_turn_;
@@ -126,27 +140,6 @@ public:
             board->reset_context();
         }
         state = GAME_STATE::NOT_INPROGRESS;
-    }
-
-    std::shared_ptr<T>
-    mutable_player_info(PARTICIPANT who_) {
-        std::shared_ptr<T> ret = nullptr;
-        switch (who_) {
-        case PARTICIPANT::PLAYER1:
-            if (player1) {
-                ret = player1->info();
-            }
-            break;
-        case PARTICIPANT::PLAYER2:
-            if (player2) {
-                ret = player2->info();
-            }
-            break;
-        default:
-            ret = nullptr;
-            break;
-        }
-        return ret;
     }
 
     MOVE_RESULT
@@ -197,7 +190,7 @@ public:
                 if (ret == MOVE_RESULT::SUCCESS) {
                     ret = board->unset_tile(player1
                                             ->get_undone_moves()
-                                            ->top());
+                                            .back());
                 }
             }
             break;
@@ -209,7 +202,7 @@ public:
                 if (ret == MOVE_RESULT::SUCCESS) {
                     ret = board->unset_tile(player2
                                             ->get_undone_moves()
-                                            ->top());
+                                            .back());
                 }
             }
             break;
@@ -235,7 +228,7 @@ public:
                 if (ret == MOVE_RESULT::SUCCESS) {
                     ret = board->set_tile(player1
                                         ->get_moves_history()
-                                        ->top(),
+                                        .back(),
                                         TILE_STATE::PLAYER1);
                 }
             }
@@ -248,7 +241,7 @@ public:
                 if (ret == MOVE_RESULT::SUCCESS) {
                     ret = board->set_tile(player2
                                         ->get_moves_history()
-                                        ->top(),
+                                        .back(),
                                         TILE_STATE::PLAYER2);
                 }
             }
@@ -294,18 +287,18 @@ public:
                 state == GAME_STATE::DREW);
     }
 
-    std::shared_ptr<const std::stack<Coordinate>>
+    const std::vector<Coordinate>
     get_moves_history(PARTICIPANT who_) const {
-        std::shared_ptr<const std::stack<Coordinate>> ret = nullptr;
+        std::vector<Coordinate> ret;
         switch (who_) {
         case PARTICIPANT::PLAYER1:
             if (player1) {
-                ret = player1->get_moves_history();
+                ret = std::move(player1->get_moves_history());
             }
             break;
         case PARTICIPANT::PLAYER2:
             if (player2) {
-                ret = player2->get_moves_history();
+                ret = std::move(player2->get_moves_history());
             }
             break;
         default:
@@ -314,18 +307,18 @@ public:
         return ret;
     }
 
-    std::shared_ptr<const std::stack<Coordinate>>
+    const std::vector<Coordinate>
     get_undone_moves(PARTICIPANT who_) const {
-        std::shared_ptr<const std::stack<Coordinate>> ret = nullptr;
+        std::vector<Coordinate> ret;
         switch (who_) {
         case PARTICIPANT::PLAYER1:
             if (player1) {
-                ret = player1->get_undone_moves();
+                ret = std::move(player1->get_undone_moves());
             }
             break;
         case PARTICIPANT::PLAYER2:
             if (player2) {
-                ret = player2->get_undone_moves();
+                ret = std::move(player2->get_undone_moves());
             }
             break;
         default:
