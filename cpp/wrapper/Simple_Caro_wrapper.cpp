@@ -1,0 +1,139 @@
+#include "Simple_Caro_wrapper.h"
+#include "../single_include/Simple_Caro.h"
+
+std::unique_ptr<Caro::Simple_Caro> game(nullptr);
+
+void caro_init_game() {
+    game = std::make_unique<Caro::Simple_Caro>();
+}
+
+void caro_deinit_game() {
+    game.reset();
+}
+
+void caro_set_board_size(int width_, int height_) {
+    if (!game) return;
+    game->set_board_size(width_, height_);
+}
+
+void caro_set_rule(CARO_RULE_TYPE rule_) {
+    if (!game) return;
+    switch (rule_) {
+    case CARO_TIC_TAC_TOE:
+        game->set_rule(Caro::RULE_TYPE::TIC_TAC_TOE);
+        break;
+    case CARO_FOUR_BLOCK_1:
+        game->set_rule(Caro::RULE_TYPE::FOUR_BLOCK_1);
+        break;
+    case CARO_FIVE_BLOCK_2:
+        game->set_rule(Caro::RULE_TYPE::FIVE_BLOCK_2);
+        break;
+    default:
+        break;
+    }
+}
+
+void caro_unset_rule() {
+    if (!game) return;
+    game->unset_rule();
+}
+
+void caro_start() {
+    if (!game) return;
+    game->start();
+}
+
+void caro_stop() {
+    if (!game) return;
+    game->stop();
+}
+
+CARO_MOVE_RESULT caro_player_move(CARO_PARTICIPANT who_, CARO_Coordinate move_) {
+    if (!game) return CARO_OUT_OF_BOUNDS;
+    Caro::MOVE_RESULT ret = Caro::MOVE_RESULT::SUCCESS;
+    Caro::Coordinate lib_move_ = {
+        move_.x,
+        move_.y,
+    };
+    switch (who_) {
+    case CARO_PLAYER1:
+        ret = game->player_move(Caro::PARTICIPANT::PLAYER1, lib_move_);
+        break;
+    case CARO_PLAYER2:
+        ret = game->player_move(Caro::PARTICIPANT::PLAYER2, lib_move_);
+        break;
+    default:
+        ret = Caro::MOVE_RESULT::WRONG_TURN;
+        break;
+    }
+    switch (ret) {
+    case Caro::MOVE_RESULT::SUCCESS:
+        return CARO_SUCCESS;
+    case Caro::MOVE_RESULT::ALREADY_OCCUPIED:
+        return CARO_ALREADY_OCCUPIED;
+    case Caro::MOVE_RESULT::WRONG_TURN:
+        return CARO_WRONG_TURN;
+    case Caro::MOVE_RESULT::OUT_OF_BOUNDS:
+        return CARO_OUT_OF_BOUNDS;
+    default:
+        return CARO_WRONG_TURN;
+    }
+}
+
+void caro_switch_turn() {
+    if (!game) return;
+    game->switch_turn();
+}
+
+void caro_get_board(CARO_Board_Struct* data_) {
+    if ( ( !game ) || ( !data_ ) ) {
+        return;
+    }
+    auto board_ = game->get_board();
+    data_->height = board_->size();
+    data_->width = board_->at(0).size();
+    for (long i = 0; i < data_->height; ++i) {
+        for (long j = 0; j < data_->width; ++j) {
+            switch (board_->at(i)[j]) {
+            case Caro::TILE_STATE::EMPTY:
+                data_->board[i][j] = CARO_TILE_EMPTY;
+                break;
+            case Caro::TILE_STATE::PLAYER1:
+                data_->board[i][j] = CARO_TILE_PLAYER1;
+                break;
+            case Caro::TILE_STATE::PLAYER2:
+                data_->board[i][j] = CARO_TILE_PLAYER2;
+                break;
+            default:
+                data_->board[i][j] = CARO_TILE_EMPTY;
+                break;
+            }
+        }
+    }
+}
+
+CARO_GAME_STATE caro_get_state() {
+    if (!game) return CARO_NOT_INPROGRESS;
+    Caro::GAME_STATE ret = game->get_state();
+    switch (ret) {
+    case Caro::GAME_STATE::PLAYER1_TURN:
+        return CARO_PLAYER1_TURN;
+    case Caro::GAME_STATE::PLAYER2_TURN:
+        return CARO_PLAYER2_TURN;
+    case Caro::GAME_STATE::PLAYER1_WON:
+        return CARO_PLAYER1_WON;
+    case Caro::GAME_STATE::PLAYER2_WON:
+        return CARO_PLAYER2_WON;
+    case Caro::GAME_STATE::DREW:
+        return CARO_DREW;
+    case Caro::GAME_STATE::NOT_INPROGRESS:
+        return CARO_NOT_INPROGRESS;
+    default:
+        return CARO_NOT_INPROGRESS;
+    }
+}
+
+bool caro_is_over() {
+    if (!game) return false;
+    return game->is_over();
+}
