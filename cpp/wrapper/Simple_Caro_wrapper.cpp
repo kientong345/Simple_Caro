@@ -38,9 +38,18 @@ void caro_unset_rule() {
     game->unset_rule();
 }
 
-void caro_start() {
+void caro_start(CARO_GAME_STATE first_turn_) {
     if (!game) return;
-    game->start();
+    switch (first_turn_) {
+    case CARO_PLAYER1_TURN:
+        game->start(Caro::GAME_STATE::PLAYER1_TURN);
+        break;
+    case CARO_PLAYER2_TURN:
+        game->start(Caro::GAME_STATE::PLAYER2_TURN);
+        break;
+    default:
+        break;
+    }
 }
 
 void caro_stop() {
@@ -80,6 +89,62 @@ CARO_MOVE_RESULT caro_player_move(CARO_PARTICIPANT who_, CARO_Coordinate move_) 
     }
 }
 
+CARO_MOVE_RESULT caro_player_undo(CARO_PARTICIPANT who_) {
+    if (!game) return CARO_OUT_OF_BOUNDS;
+    Caro::MOVE_RESULT ret = Caro::MOVE_RESULT::SUCCESS;
+    switch (who_) {
+    case CARO_PLAYER1:
+        ret = game->player_undo(Caro::PARTICIPANT::PLAYER1);
+        break;
+    case CARO_PLAYER2:
+        ret = game->player_undo(Caro::PARTICIPANT::PLAYER2);
+        break;
+    default:
+        ret = Caro::MOVE_RESULT::WRONG_TURN;
+        break;
+    }
+    switch (ret) {
+    case Caro::MOVE_RESULT::SUCCESS:
+        return CARO_SUCCESS;
+    case Caro::MOVE_RESULT::ALREADY_OCCUPIED:
+        return CARO_ALREADY_OCCUPIED;
+    case Caro::MOVE_RESULT::WRONG_TURN:
+        return CARO_WRONG_TURN;
+    case Caro::MOVE_RESULT::OUT_OF_BOUNDS:
+        return CARO_OUT_OF_BOUNDS;
+    default:
+        return CARO_WRONG_TURN;
+    }
+}
+
+CARO_MOVE_RESULT caro_player_redo(CARO_PARTICIPANT who_) {
+    if (!game) return CARO_OUT_OF_BOUNDS;
+    Caro::MOVE_RESULT ret = Caro::MOVE_RESULT::SUCCESS;
+    switch (who_) {
+    case CARO_PLAYER1:
+        ret = game->player_redo(Caro::PARTICIPANT::PLAYER1);
+        break;
+    case CARO_PLAYER2:
+        ret = game->player_redo(Caro::PARTICIPANT::PLAYER2);
+        break;
+    default:
+        ret = Caro::MOVE_RESULT::WRONG_TURN;
+        break;
+    }
+    switch (ret) {
+    case Caro::MOVE_RESULT::SUCCESS:
+        return CARO_SUCCESS;
+    case Caro::MOVE_RESULT::ALREADY_OCCUPIED:
+        return CARO_ALREADY_OCCUPIED;
+    case Caro::MOVE_RESULT::WRONG_TURN:
+        return CARO_WRONG_TURN;
+    case Caro::MOVE_RESULT::OUT_OF_BOUNDS:
+        return CARO_OUT_OF_BOUNDS;
+    default:
+        return CARO_WRONG_TURN;
+    }
+}
+
 void caro_switch_turn() {
     if (!game) return;
     game->switch_turn();
@@ -92,6 +157,11 @@ void caro_get_board(CARO_Board_Struct* data_) {
     auto board_ = game->get_board();
     data_->height = board_->size();
     data_->width = board_->at(0).size();
+    data_->board = new CARO_TILE_STATE*[data_->height];
+    for (int k = 0; k < data_->height; ++k) {
+        data_->board[k] = new CARO_TILE_STATE[data_->width];
+    }
+
     for (long i = 0; i < data_->height; ++i) {
         for (long j = 0; j < data_->width; ++j) {
             switch (board_->at(i)[j]) {
@@ -136,4 +206,67 @@ CARO_GAME_STATE caro_get_state() {
 bool caro_is_over() {
     if (!game) return false;
     return game->is_over();
+}
+
+void caro_get_moves_history(CARO_Moves_Set* data_, CARO_PARTICIPANT who_) {
+    if ( ( !game ) || ( !data_ ) ) {
+        return;
+    }
+    std::vector<Caro::Coordinate> move_history_;
+    switch (who_) {
+    case CARO_PLAYER1:
+        move_history_ = game->get_moves_history(Caro::PARTICIPANT::PLAYER1);
+        break;
+    case CARO_PLAYER2:
+        move_history_ = game->get_moves_history(Caro::PARTICIPANT::PLAYER2);
+        break;
+    default:
+        break;
+    }
+    data_->length = move_history_.size();
+    data_->moves_set = new CARO_Coordinate[data_->length];
+    for (int i = 0; i < data_->length; ++i) {
+        CARO_Coordinate c_move = {
+            move_history_[i].x,
+            move_history_[i].y,
+        };
+        data_->moves_set[i] = c_move;
+    }
+}
+
+void caro_get_undone_moves(CARO_Moves_Set* data_, CARO_PARTICIPANT who_) {
+    if ( ( !game ) || ( !data_ ) ) {
+        return;
+    }
+    std::vector<Caro::Coordinate> undone_moves_;
+    switch (who_) {
+    case CARO_PLAYER1:
+        undone_moves_ = game->get_undone_moves(Caro::PARTICIPANT::PLAYER1);
+        break;
+    case CARO_PLAYER2:
+        undone_moves_ = game->get_undone_moves(Caro::PARTICIPANT::PLAYER2);
+        break;
+    default:
+        break;
+    }
+    data_->length = undone_moves_.size();
+    data_->moves_set = new CARO_Coordinate[data_->length];
+    for (int i = 0; i < data_->length; ++i) {
+        CARO_Coordinate c_move = {
+            undone_moves_[i].x,
+            undone_moves_[i].y,
+        };
+        data_->moves_set[i] = c_move;
+    }
+}
+
+void caro_free_board(CARO_Board_Struct* data_) {
+    for (int i = 0; i < data_->height; ++i) {
+        delete[] data_->board[i];
+    }
+    delete[] data_->board;
+}
+
+void caro_free_move_set(CARO_Moves_Set* data_) {
+    delete[] data_->moves_set;
 }
