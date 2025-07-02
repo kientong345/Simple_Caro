@@ -100,8 +100,8 @@ CARO_MOVE_RESULT caro_player_move(int gid_, CARO_PARTICIPANT who_, CARO_Coordina
     }
     Caro::MOVE_RESULT ret = Caro::MOVE_RESULT::SUCCESS;
     Caro::Coordinate lib_move_ = {
-        move_.x,
-        move_.y,
+        move_.latitude,
+        move_.longtitude,
     };
     switch (who_) {
     case CARO_PLAYER1:

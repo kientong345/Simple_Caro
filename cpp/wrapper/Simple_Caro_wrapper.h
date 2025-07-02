@@ -20,8 +20,8 @@ typedef enum {
 } CARO_RULE_TYPE;
 
 typedef struct {
-    long x;
-    long y;
+    long latitude;
+    long longtitude;
 } CARO_Coordinate;
 
 typedef enum {
