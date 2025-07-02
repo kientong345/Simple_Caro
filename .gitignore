@@ -2,3 +2,4 @@
 rust/*
 cpp/example/example
 *.o
+*.rs

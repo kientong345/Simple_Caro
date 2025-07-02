@@ -13,11 +13,12 @@
 namespace Caro {
 
 struct Coordinate {
-    int64_t x;
-    int64_t y;
+    int64_t latitude;
+    int64_t longtitude;
     // for std::set<Coordinate>
     bool operator<(const Coordinate& other) const {
-        return (x < other.x) || (x == other.x && y < other.y);
+        return (latitude < other.latitude) || 
+            (latitude == other.latitude && longtitude < other.longtitude);
     }
 };
 
@@ -77,6 +78,59 @@ enum class LINE_PROPERTY {
     OTHER,
 };
 
+class Board {
+private:
+    std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board;
+
+public:
+    Board(
+        std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_
+    ) : board(board_) {}
+
+    size_t
+    height() const {
+        return board->size();
+    }
+
+    size_t
+    width() const {
+        if (board->size() == 0) {
+            return 0;
+        }
+        return board->at(0).size();
+    }
+
+    std::vector<TILE_STATE>
+    row(size_t latitude_) const {
+		return std::vector<TILE_STATE>(board->at(latitude_));
+	}
+
+	std::vector<TILE_STATE>
+    column(size_t longtitude_) const {
+		std::vector<TILE_STATE> column_;
+		column_.reserve(board->at(0).size());
+		for (int i = 0; i < board->size(); ++i) {
+			column_.push_back(board->at(i)[longtitude_]);
+		}
+		return column_;
+	}
+
+	TILE_STATE
+    tile(size_t latitude_, size_t longtitude_) const {
+		return board->at(latitude_)[longtitude_];
+	}
+
+};
+
+inline bool is_valid_coordinate(
+    const Board& board_,
+    const Coordinate& coor_) {
+    return  board_.height() > 0 &&
+            board_.width() > 0 &&
+            coor_.latitude >= 0 && coor_.latitude < board_.height() &&
+            coor_.longtitude >= 0 && coor_.longtitude < board_.width();
+};
+
 class Player_Context {
 private:
 #if __cplusplus >= 201703L
@@ -96,7 +150,7 @@ public:
     MOVE_RESULT
     move(Coordinate move_) {
         MOVE_RESULT ret = MOVE_RESULT::SUCCESS;
-        if ( ( move_.x < 0 ) || ( move_.y < 0 ) ) {
+        if ( ( move_.latitude < 0 ) || ( move_.longtitude < 0 ) ) {
             ret = MOVE_RESULT::OUT_OF_BOUNDS;
         } else if ( ( moves_set.find(move_) ) != 
                     ( moves_set.end() ) ) {
@@ -184,18 +238,20 @@ public:
 class Board_Context {
 private:
     std::shared_ptr<std::vector<std::vector<TILE_STATE>>> board;
+    long occupied_tiles_counter;
 
 public:
-    Board_Context(uint32_t width, uint32_t height)
+    Board_Context(uint32_t height, uint32_t width)
         : board(std::make_shared<std::vector<std::vector<TILE_STATE>>>(
-            height, std::vector<TILE_STATE>(width, TILE_STATE::EMPTY))) {}
+            height, std::vector<TILE_STATE>(width, TILE_STATE::EMPTY))),
+          occupied_tiles_counter(0) {}
 
     ~Board_Context() = default;
 
-    std::shared_ptr<const std::vector<std::vector<TILE_STATE>>>
+    Board
     get_board()
         const {
-        return board;
+        return Board(board);
     }
 
     MOVE_RESULT
@@ -203,16 +259,14 @@ public:
         MOVE_RESULT ret = MOVE_RESULT::SUCCESS;
         bool board_has_tiles = (board->size() > 0) &&
                                (board->at(0).size() > 0);
-        bool pos_on_board = (board_has_tiles) &&
-            (pos_.x >= 0) && (pos_.y >= 0) &&
-            (pos_.x < board->size()) &&
-            (pos_.y < board->at(0).size());
+        bool pos_on_board = is_valid_coordinate(Board(board), pos_);
         if ( !pos_on_board ) {
             ret = MOVE_RESULT::OUT_OF_BOUNDS;
-        } else if (board->at(pos_.x)[pos_.y] != TILE_STATE::EMPTY) {
+        } else if (board->at(pos_.latitude)[pos_.longtitude] != TILE_STATE::EMPTY) {
             ret = MOVE_RESULT::ALREADY_OCCUPIED;
         } else {
-            (*board)[pos_.x][pos_.y] = state;
+            (*board)[pos_.latitude][pos_.longtitude] = state;
+            ++occupied_tiles_counter;
             ret = MOVE_RESULT::SUCCESS;
         }
         return ret;
@@ -223,37 +277,42 @@ public:
         MOVE_RESULT ret = MOVE_RESULT::SUCCESS;
         bool board_has_tiles = (board->size() > 0) &&
                                (board->at(0).size() > 0);
-        bool pos_on_board = (board_has_tiles) &&
-            (pos_.x >= 0) && (pos_.y >= 0) &&
-            (pos_.x < board->size()) &&
-            (pos_.y < board->at(0).size());
+        bool pos_on_board = is_valid_coordinate(Board(board), pos_);
         if ( !pos_on_board ) {
             ret = MOVE_RESULT::OUT_OF_BOUNDS;
         } else {
-            (*board)[pos_.x][pos_.y] = TILE_STATE::EMPTY;
+            (*board)[pos_.latitude][pos_.longtitude] = TILE_STATE::EMPTY;
+            --occupied_tiles_counter;
             ret = MOVE_RESULT::SUCCESS;
         }
         return ret;
     }
 
+    long
+    occupied_tiles_count() {
+        return occupied_tiles_counter;
+    }
+
     void
     reset_context() {
         board->clear();
+        occupied_tiles_counter = 0;
     }
 };
 
 class Check_Tiles_Sequence {
 private:
-    std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board;
+    Board board;
     const unsigned int seq_count;
 
-    bool is_winning_sequence (
+    bool
+    is_winning_sequence (
         const Coordinate& coor_,
         const size_t dx_, const size_t dy_,
         bool& blocked_start_, bool& blocked_end_
     ) const {
         unsigned int move_counter_ = 0;
-        const TILE_STATE tile_state_ = board->at(coor_.x)[coor_.y];
+        const TILE_STATE tile_state_ = board.tile(coor_.latitude, coor_.longtitude);
         TILE_STATE opposite_tile_state_ = TILE_STATE::EMPTY;
 
         switch (tile_state_) {
@@ -269,30 +328,30 @@ private:
 
         // negative moving
         Coordinate cur_coor_ = {
-            coor_.x,
-            coor_.y,
+            coor_.latitude,
+            coor_.longtitude,
         };
-        while ( ( Check_Tiles_Sequence::is_valid_coordinate(board, cur_coor_) ) &&
-                ( board->at(cur_coor_.x)[cur_coor_.y] == tile_state_) ) {
-            cur_coor_.x -= dx_;
-            cur_coor_.y -= dy_;
+        while ( ( is_valid_coordinate(board, cur_coor_) ) &&
+                ( board.tile(cur_coor_.latitude, cur_coor_.longtitude) == tile_state_) ) {
+            cur_coor_.latitude -= dx_;
+            cur_coor_.longtitude -= dy_;
             ++move_counter_;
         }
-        blocked_start_ = (Check_Tiles_Sequence::is_valid_coordinate(board, cur_coor_)) &&
-                        ((board->at(cur_coor_.x)[cur_coor_.y] == opposite_tile_state_)) ?
+        blocked_start_ = (is_valid_coordinate(board, cur_coor_)) &&
+            ((board.tile(cur_coor_.latitude, cur_coor_.longtitude) == opposite_tile_state_)) ?
             true : false;
         
         // positive moving
-        cur_coor_.x = coor_.x;
-        cur_coor_.y = coor_.y;
-        while ( ( Check_Tiles_Sequence::is_valid_coordinate(board, cur_coor_) ) &&
-                ( board->at(cur_coor_.x)[cur_coor_.y] == tile_state_) ) {
-            cur_coor_.x += dx_;
-            cur_coor_.y += dy_;
+        cur_coor_.latitude = coor_.latitude;
+        cur_coor_.longtitude = coor_.longtitude;
+        while ( ( is_valid_coordinate(board, cur_coor_) ) &&
+                ( board.tile(cur_coor_.latitude, cur_coor_.longtitude) == tile_state_) ) {
+            cur_coor_.latitude += dx_;
+            cur_coor_.longtitude += dy_;
             ++move_counter_;
         }
-        blocked_end_ = (Check_Tiles_Sequence::is_valid_coordinate(board, cur_coor_)) &&
-                        ((board->at(cur_coor_.x)[cur_coor_.y] == opposite_tile_state_)) ?
+        blocked_end_ = (is_valid_coordinate(board, cur_coor_)) &&
+            ((board.tile(cur_coor_.latitude, cur_coor_.longtitude) == opposite_tile_state_)) ?
             true : false;
 
         return (move_counter_-1 >= seq_count) ? true : false;
@@ -300,24 +359,18 @@ private:
 
 public:
     Check_Tiles_Sequence(
-        std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_,
+        const Board& board_,
         unsigned int seq_count_)
     : board(std::move(board_)), seq_count(seq_count_) {}
 
-    static bool is_valid_coordinate(
-        std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_,
-        const Coordinate& coor_) {
-        return  board_->size() > 0 &&
-                board_->at(0).size() > 0 &&
-                coor_.x >= 0 && coor_.x < board_->size() &&
-                coor_.y >= 0 && coor_.y < board_->at(0).size();
-    };
-
-    GAME_CHECK operator()(const Coordinate& coor_, unsigned char block_num_) const {
-        if (!Check_Tiles_Sequence::is_valid_coordinate(board, coor_)) {
+    GAME_CHECK
+    operator()(
+        const Coordinate& coor_, unsigned char block_num_
+    ) const {
+        if (!is_valid_coordinate(board, coor_)) {
             return GAME_CHECK::RULE_NOT_FOUND;
         }
-        if ( board->at(coor_.x)[coor_.y] == TILE_STATE::EMPTY ) {
+        if ( board.tile(coor_.latitude, coor_.longtitude) == TILE_STATE::EMPTY ) {
             return GAME_CHECK::ONGOING;
         }
         if ( block_num_ > 2 ) {
@@ -346,7 +399,7 @@ public:
             if ( ( ( block_num_ == 0 ) && ( nonblocked_winning_ ) ) ||
                 ( ( block_num_ == 1 ) && ( blocked1_winning_ ) ) ||
                 ( ( block_num_ == 2 ) && ( blocked2_winning_ ) ) ) {
-                switch (board->at(coor_.x)[coor_.y]) {
+                switch (board.tile(coor_.latitude, coor_.longtitude)) {
                 case TILE_STATE::PLAYER1:
                     return GAME_CHECK::PLAYER1_WIN;
                 case TILE_STATE::PLAYER2:
@@ -364,570 +417,115 @@ public:
 };
 
 class Ruling {
-protected:
-    // uint32_t win_count;
-
-    /**
-     * common coordinate check function (Cartesian coordinate system)
-     *   y
-     *   ^
-     *   |
-     *   |
-     *   |
-     *   |
-     *   |
-     *   |<---win_count--->|
-     *   +-----------------+-----> x
-     * Base               End
-     */
-    // boilerplate as hell, though it would work right!
-    /**
-     * @brief check the property of a line
-     * @param board_ the board
-     * @param x_ x position on the board
-     * @param y_ y position on the board
-     * @param line_type_ direction of the line
-     * @note x, y would be the base of the line
-     * @return the line property
-     */
-    virtual LINE_PROPERTY check_line_property(
-        std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_,
-        size_t x_, size_t y_, LINE_TYPE line_type_) = 0;
-
-    GAME_CHECK brute_force_check_win(
-        std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_
-    ) {
-        size_t row_num_ = board_->size();
-        size_t col_num_ = board_->at(0).size();
-        GAME_CHECK ret = GAME_CHECK::ONGOING;
-        auto ret_update_ = [&ret](LINE_PROPERTY line_property_) {
-            if (line_property_ ==
-                LINE_PROPERTY::PLAYER1_SEQUENCE_WITHOUT_BLOCKED) {
-                ret = GAME_CHECK::PLAYER1_WIN;
-            } else if (line_property_ ==
-                LINE_PROPERTY::PLAYER2_SEQUENCE_WITHOUT_BLOCKED) {
-                ret = GAME_CHECK::PLAYER2_WIN;
-            } else {
-                // do nothing
-            }
-        };
-        for (int i = 0; i < row_num_; ++i) {
-            for (int j = 0; j < col_num_; ++j) {
-                if (board_->at(i)[j] == TILE_STATE::EMPTY) {
-                    continue;
-                }
-
-                LINE_PROPERTY horizontal_ = check_line_property(
-                    board_, i, j, LINE_TYPE::HORIZONTAL
-                );
-                ret_update_(horizontal_);
-                
-                LINE_PROPERTY vertical_ = check_line_property(
-                    board_, i, j, LINE_TYPE::VERTICAL
-                );
-                ret_update_(vertical_);
-
-                LINE_PROPERTY back_diag_ = check_line_property(
-                    board_, i, j, LINE_TYPE::BACK_DIAGONAL
-                );
-                ret_update_(back_diag_);
-
-                LINE_PROPERTY forward_diag_ = check_line_property(
-                    board_, i, j, LINE_TYPE::FORWARD_DIAGONAL
-                );
-                ret_update_(forward_diag_);
-
-                if ( ( ret == GAME_CHECK::PLAYER1_WIN )||
-                    ( ret == GAME_CHECK::PLAYER2_WIN ) ) {
-                    return ret;
-                }
-            }
-        }
-        return GAME_CHECK::ONGOING;
-    }
-
-    GAME_CHECK brute_force_check_draw(
-        std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_
-    ) {
-        size_t row_num_ = board_->size();
-        size_t col_num_ = board_->at(0).size();
-        for (int i = 0; i < row_num_; ++i) {
-            for (int j = 0; j < col_num_; ++j) {
-                if (board_->at(i)[j] == TILE_STATE::EMPTY) {
-                    return GAME_CHECK::ONGOING;
-                }
-            }
-        }
-        return GAME_CHECK::DRAW;
-    }
-
 public:
     virtual GAME_CHECK
     check_win(
-        std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_,
+        const Board& board_,
         const Coordinate& latest_move = {-1, -1}
     ) = 0;
+
     virtual GAME_CHECK
     check_draw(
-        std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_
+        const Board& board_
     ) = 0;
 };
 
 class Tic_Tac_Toe_Rule : public Ruling {
-private:
-    virtual LINE_PROPERTY check_line_property(
-        std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_,
-        size_t x_, size_t y_, LINE_TYPE line_type_
-    ) override {
-        LINE_PROPERTY ret_ = LINE_PROPERTY::OTHER;
-        size_t row_num_ = board_->size();
-        size_t col_num_ = board_->at(0).size();
-
-        switch (line_type_) {
-        case LINE_TYPE::HORIZONTAL:
-            if (y_+2 < col_num_) {
-                if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_)[y_+1] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_)[y_+2] == TILE_STATE::PLAYER1 )) {
-                    ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_WITHOUT_BLOCKED;
-                } else if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_)[y_+1] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_)[y_+2] == TILE_STATE::PLAYER2 ) ) {
-                    ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_WITHOUT_BLOCKED;
-                } else {
-                    ret_ = LINE_PROPERTY::OTHER;
-                }
-            } else {
-                ret_ = LINE_PROPERTY::OTHER;
-            }
-            break;
-        case LINE_TYPE::VERTICAL:
-            if (x_+2 < row_num_) {
-                if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_+1)[y_] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_+2)[y_] == TILE_STATE::PLAYER1 ) ) {
-                    ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_WITHOUT_BLOCKED;
-                } else if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_+1)[y_] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_+2)[y_] == TILE_STATE::PLAYER2 ) ) {
-                    ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_WITHOUT_BLOCKED;
-                } else {
-                    ret_ = LINE_PROPERTY::OTHER;
-                }
-            } else {
-                ret_ = LINE_PROPERTY::OTHER;
-            }
-            break;
-        case LINE_TYPE::BACK_DIAGONAL:
-            if ( ( x_+2 < row_num_ ) && ( y_-2 >= 0 ) ) {
-                if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_+1)[y_-1] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_+2)[y_-2] == TILE_STATE::PLAYER1 ) ) {
-                    ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_WITHOUT_BLOCKED;
-                } else if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_+1)[y_-1] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_+2)[y_-2] == TILE_STATE::PLAYER2 ) ) {
-                    ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_WITHOUT_BLOCKED;
-                } else {
-                    ret_ = LINE_PROPERTY::OTHER;
-                }
-            } else {
-                ret_ = LINE_PROPERTY::OTHER;
-            }
-            break;
-        case LINE_TYPE::FORWARD_DIAGONAL:
-            if ( ( x_+2 < row_num_ ) && ( y_+2 < col_num_ ) ) {
-                if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_+1)[y_+1] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_+2)[y_+2] == TILE_STATE::PLAYER1 ) ) {
-                    ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_WITHOUT_BLOCKED;
-                } else if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_+1)[y_+1] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_+2)[y_+2] == TILE_STATE::PLAYER2 ) ) {
-                    ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_WITHOUT_BLOCKED;
-                } else {
-                    ret_ = LINE_PROPERTY::OTHER;
-                }
-            } else {
-                ret_ = LINE_PROPERTY::OTHER;
-            }
-            break;
-        default:
-            ret_ = LINE_PROPERTY::OTHER;
-            break;
-        }
-        return ret_;
-    }
-
 public:
     GAME_CHECK
     check_win(
-        std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_,
+        const Board& board_,
         const Coordinate& latest_move_ = {-1, -1}
     ) override {
-        if (Check_Tiles_Sequence::is_valid_coordinate(board_, latest_move_)) {
+        if (is_valid_coordinate(board_, latest_move_)) {
             Check_Tiles_Sequence win_checker_(board_, 3);
             return win_checker_(latest_move_, 0);
         } else {
-            return brute_force_check_win(board_);
+            for (int latitude_ = 0; latitude_ < board_.height(); ++latitude_) {
+                for (int longtitude_ = 0; longtitude_ < board_.width(); ++longtitude_) {
+                    Check_Tiles_Sequence tile_checker_(board_, 3);
+                    GAME_CHECK result_ = tile_checker_({latitude_, longtitude_}, 0);
+                    if (result_ != GAME_CHECK::ONGOING) {
+                        return result_;
+                    }
+                }
+            }
+            return GAME_CHECK::ONGOING;
         }
     }
+
     GAME_CHECK
     check_draw(
-        std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_
+        const Board& board_
     ) override {
         // Implement the logic for checking the draw condition
-        return brute_force_check_draw(board_);
+        return GAME_CHECK::ONGOING;
     }
 };
 
 class Four_Block_1_Rule : public Ruling {
-private:
-    virtual LINE_PROPERTY check_line_property(
-        std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_,
-        size_t x_, size_t y_, LINE_TYPE line_type_
-    ) override {
-        LINE_PROPERTY ret_ = LINE_PROPERTY::OTHER;
-        size_t row_num_ = board_->size();
-        size_t col_num_ = board_->at(0).size();
-
-        switch (line_type_) {
-        case LINE_TYPE::HORIZONTAL:
-            if (y_+3 < col_num_) {
-                if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_)[y_+1] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_)[y_+2] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_)[y_+3] == TILE_STATE::PLAYER1 ) ) {
-                    if ( ( ( y_+4 < col_num_ ) &&
-                        ( board_->at(x_)[y_+4] == TILE_STATE::PLAYER2 ) ) ||
-                        ( ( y_-1 >= 0 ) &&
-                        ( board_->at(x_)[y_-1] == TILE_STATE::PLAYER2 ) ) ) {
-                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_BLOCKED;
-                    } else {
-                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_WITHOUT_BLOCKED;
-                    }
-                } else if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_)[y_+1] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_)[y_+2] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_)[y_+3] == TILE_STATE::PLAYER2 ) ) {
-                    if ( ( ( y_+4 < col_num_ ) &&
-                        ( board_->at(x_)[y_+4] == TILE_STATE::PLAYER1 ) ) ||
-                        ( ( y_-1 >= 0 ) &&
-                        ( board_->at(x_)[y_-1] == TILE_STATE::PLAYER1 ) ) ) {
-                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_BLOCKED;
-                    } else {
-                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_WITHOUT_BLOCKED;
-                    }
-                } else {
-                    ret_ = LINE_PROPERTY::OTHER;
-                }
-            } else {
-                ret_ = LINE_PROPERTY::OTHER;
-            }
-            break;
-        case LINE_TYPE::VERTICAL:
-            if (x_+3 < row_num_) {
-                if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_+1)[y_] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_+2)[y_] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_+3)[y_] == TILE_STATE::PLAYER1 ) ) {
-                    if ( ( ( x_+4 < row_num_ ) &&
-                        ( board_->at(x_+4)[y_] == TILE_STATE::PLAYER2 ) ) ||
-                        ( ( x_-1 >= 0 ) &&
-                        ( board_->at(x_-1)[y_] == TILE_STATE::PLAYER2 ) ) ) {
-                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_BLOCKED;
-                    } else {
-                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_WITHOUT_BLOCKED;
-                    }
-                } else if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_+1)[y_] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_+2)[y_] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_+3)[y_] == TILE_STATE::PLAYER2 ) ) {
-                    if ( ( ( x_+4 < row_num_ ) &&
-                        ( board_->at(x_+4)[y_] == TILE_STATE::PLAYER1 ) ) ||
-                        ( ( x_-1 >= 0 ) &&
-                        ( board_->at(x_-1)[y_] == TILE_STATE::PLAYER1 ) ) ) {
-                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_BLOCKED;
-                    } else {
-                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_WITHOUT_BLOCKED;
-                    }
-                } else {
-                    ret_ = LINE_PROPERTY::OTHER;
-                }
-            } else {
-                ret_ = LINE_PROPERTY::OTHER;
-            }
-            break;
-        case LINE_TYPE::BACK_DIAGONAL:
-            if ( ( x_+3 < row_num_ ) && ( y_-3 >= 0 ) ) {
-                if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_+1)[y_-1] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_+2)[y_-2] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_+3)[y_-3] == TILE_STATE::PLAYER1 ) ) {
-                    if ( ( ( x_+4 < row_num_ ) && ( y_-4 >= 0 ) &&
-                        ( board_->at(x_+4)[y_-4] == TILE_STATE::PLAYER2 ) ) ||
-                        ( ( x_-1 >= 0 ) && ( y_+1 < col_num_ ) &&
-                        ( board_->at(x_-1)[y_+1] == TILE_STATE::PLAYER2 ) ) ) {
-                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_BLOCKED;
-                    } else {
-                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_WITHOUT_BLOCKED;
-                    }
-                } else if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_+1)[y_-1] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_+2)[y_-2] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_+3)[y_-3] == TILE_STATE::PLAYER2 ) ) {
-                    if ( ( ( x_+4 < row_num_ ) && ( y_-4 >= 0 ) &&
-                        ( board_->at(x_+4)[y_-4] == TILE_STATE::PLAYER1 ) ) ||
-                        ( ( x_-1 >= 0 ) && ( y_+1 < col_num_ ) &&
-                        ( board_->at(x_-1)[y_+1] == TILE_STATE::PLAYER1 ) ) ) {
-                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_BLOCKED;
-                    } else {
-                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_WITHOUT_BLOCKED;
-                    }
-                } else {
-                    ret_ = LINE_PROPERTY::OTHER;
-                }
-            } else {
-                ret_ = LINE_PROPERTY::OTHER;
-            }
-            break;
-        case LINE_TYPE::FORWARD_DIAGONAL:
-            if ( ( x_+3 < row_num_ ) && ( y_+3 < col_num_ ) ) {
-                if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_+1)[y_+1] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_+2)[y_+2] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_+3)[y_+3] == TILE_STATE::PLAYER1 ) ) {
-                    if ( ( ( x_+4 < row_num_ ) && ( y_+4 < col_num_ ) &&
-                        ( board_->at(x_+4)[y_+4] == TILE_STATE::PLAYER2 ) ) ||
-                        ( ( x_-1 >= 0 ) && ( y_-1 >= 0 ) &&
-                        ( board_->at(x_-1)[y_-1] == TILE_STATE::PLAYER2 ) ) ) {
-                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_BLOCKED;
-                    } else {
-                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_WITHOUT_BLOCKED;
-                    }
-                } else if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_+1)[y_+1] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_+2)[y_+2] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_+3)[y_+3] == TILE_STATE::PLAYER2 ) ) {
-                    if ( ( ( x_+4 < row_num_ ) && ( y_+4 < col_num_ ) &&
-                        ( board_->at(x_+4)[y_+4] == TILE_STATE::PLAYER1 ) ) ||
-                        ( ( x_-1 >= 0 ) && ( y_-1 >= 0 ) &&
-                        ( board_->at(x_-1)[y_-1] == TILE_STATE::PLAYER1 ) ) ) {
-                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_BLOCKED;
-                    } else {
-                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_WITHOUT_BLOCKED;
-                    }
-                } else {
-                    ret_ = LINE_PROPERTY::OTHER;
-                }
-            } else {
-                ret_ = LINE_PROPERTY::OTHER;
-            }
-            break;
-        default:
-            ret_ = LINE_PROPERTY::OTHER;
-            break;
-        }
-        return ret_;
-    }
 public:
     GAME_CHECK
     check_win(
-        std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_,
+        const Board& board_,
         const Coordinate& latest_move_ = {-1, -1}
     ) override {
-        if (Check_Tiles_Sequence::is_valid_coordinate(board_, latest_move_)) {
+        if (is_valid_coordinate(board_, latest_move_)) {
             Check_Tiles_Sequence win_checker_(board_, 4);
             return win_checker_(latest_move_, 1);
         } else {
-            return brute_force_check_win(board_);
+            for (int latitude_ = 0; latitude_ < board_.height(); ++latitude_) {
+                for (int longtitude_ = 0; longtitude_ < board_.width(); ++longtitude_) {
+                    Check_Tiles_Sequence tile_checker_(board_, 4);
+                    GAME_CHECK result_ = tile_checker_({latitude_, longtitude_}, 1);
+                    if (result_ != GAME_CHECK::ONGOING) {
+                        return result_;
+                    }
+                }
+            }
+            return GAME_CHECK::ONGOING;
         }
     }
+
     GAME_CHECK
     check_draw(
-        std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_
+        const Board& board_
     ) override {
         // Implement the logic for checking the draw condition
-        return brute_force_check_draw(board_);
+        return GAME_CHECK::ONGOING;
     }
 };
 
 class Five_Block_2_Rule : public Ruling {
-private:
-    virtual LINE_PROPERTY check_line_property(
-        std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_,
-        size_t x_, size_t y_, LINE_TYPE line_type_
-    ) override {
-        LINE_PROPERTY ret_ = LINE_PROPERTY::OTHER;
-        size_t row_num_ = board_->size();
-        size_t col_num_ = board_->at(0).size();
-
-        switch (line_type_) {
-        case LINE_TYPE::HORIZONTAL:
-            if (y_+4 < col_num_) {
-                if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_)[y_+1] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_)[y_+2] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_)[y_+3] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_)[y_+4] == TILE_STATE::PLAYER1 ) ) {
-                    if ( ( ( y_+5 < col_num_ ) &&
-                        ( board_->at(x_)[y_+5] == TILE_STATE::PLAYER2 ) ) &&
-                        ( ( y_-1 >= 0 ) &&
-                        ( board_->at(x_)[y_-1] == TILE_STATE::PLAYER2 ) ) ) {
-                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_BLOCKED;
-                    } else {
-                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_WITHOUT_BLOCKED;
-                    }
-                } else if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_)[y_+1] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_)[y_+2] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_)[y_+3] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_)[y_+4] == TILE_STATE::PLAYER2 ) ) {
-                    if ( ( ( y_+5 < col_num_ ) &&
-                        ( board_->at(x_)[y_+5] == TILE_STATE::PLAYER1 ) ) &&
-                        ( ( y_-1 >= 0 ) &&
-                        ( board_->at(x_)[y_-1] == TILE_STATE::PLAYER1 ) ) ) {
-                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_BLOCKED;
-                    } else {
-                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_WITHOUT_BLOCKED;
-                    }
-                } else {
-                    ret_ = LINE_PROPERTY::OTHER;
-                }
-            } else {
-                ret_ = LINE_PROPERTY::OTHER;
-            }
-            break;
-        case LINE_TYPE::VERTICAL:
-            if (x_+4 < row_num_) {
-                if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_+1)[y_] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_+2)[y_] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_+3)[y_] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_+4)[y_] == TILE_STATE::PLAYER1 ) ) {
-                    if ( ( ( x_+5 < row_num_ ) &&
-                        ( board_->at(x_+5)[y_] == TILE_STATE::PLAYER2 ) ) &&
-                        ( ( x_-1 >= 0 ) &&
-                        ( board_->at(x_-1)[y_] == TILE_STATE::PLAYER2 ) ) ) {
-                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_BLOCKED;
-                    } else {
-                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_WITHOUT_BLOCKED;
-                    }
-                } else if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_+1)[y_] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_+2)[y_] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_+3)[y_] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_+4)[y_] == TILE_STATE::PLAYER2 ) ) {
-                    if ( ( ( x_+5 < row_num_ ) &&
-                        ( board_->at(x_+5)[y_] == TILE_STATE::PLAYER1 ) ) &&
-                        ( ( x_-1 >= 0 ) &&
-                        ( board_->at(x_-1)[y_] == TILE_STATE::PLAYER1 ) ) ) {
-                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_BLOCKED;
-                    } else {
-                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_WITHOUT_BLOCKED;
-                    }
-                } else {
-                    ret_ = LINE_PROPERTY::OTHER;
-                }
-            } else {
-                ret_ = LINE_PROPERTY::OTHER;
-            }
-            break;
-        case LINE_TYPE::BACK_DIAGONAL:
-            if ( ( x_+4 < row_num_ ) && ( y_-4 >= 0 ) ) {
-                if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_+1)[y_-1] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_+2)[y_-2] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_+3)[y_-3] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_+4)[y_-4] == TILE_STATE::PLAYER1 ) ) {
-                    if ( ( ( x_+5 < row_num_ ) && ( y_-5 >= 0 ) &&
-                        ( board_->at(x_+5)[y_-5] == TILE_STATE::PLAYER2 ) ) &&
-                        ( ( x_-1 >= 0 ) && ( y_+1 < col_num_ ) &&
-                        ( board_->at(x_-1)[y_+1] == TILE_STATE::PLAYER2 ) ) ) {
-                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_BLOCKED;
-                    } else {
-                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_WITHOUT_BLOCKED;
-                    }
-                } else if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_+1)[y_-1] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_+2)[y_-2] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_+3)[y_-3] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_+4)[y_-4] == TILE_STATE::PLAYER2 ) ) {
-                    if ( ( ( x_+5 < row_num_ ) && ( y_-5 >= 0 ) &&
-                        ( board_->at(x_+5)[y_-5] == TILE_STATE::PLAYER1 ) ) &&
-                        ( ( x_-1 >= 0 ) && ( y_+1 < col_num_ ) &&
-                        ( board_->at(x_-1)[y_+1] == TILE_STATE::PLAYER1 ) ) ) {
-                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_BLOCKED;
-                    } else {
-                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_WITHOUT_BLOCKED;
-                    }
-                } else {
-                    ret_ = LINE_PROPERTY::OTHER;
-                }
-            } else {
-                ret_ = LINE_PROPERTY::OTHER;
-            }
-            break;
-        case LINE_TYPE::FORWARD_DIAGONAL:
-            if ( ( x_+4 < row_num_ ) && ( y_+4 < col_num_ ) ) {
-                if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_+1)[y_+1] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_+2)[y_+2] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_+3)[y_+3] == TILE_STATE::PLAYER1 ) &&
-                    ( board_->at(x_+4)[y_+4] == TILE_STATE::PLAYER1 ) ) {
-                    if ( ( ( x_+5 < row_num_ ) && ( y_+5 < col_num_ ) &&
-                        ( board_->at(x_+5)[y_+5] == TILE_STATE::PLAYER2 ) ) &&
-                        ( ( x_-1 >= 0 ) && ( y_-1 >= 0 ) &&
-                        ( board_->at(x_-1)[y_-1] == TILE_STATE::PLAYER2 ) ) ) {
-                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_BLOCKED;
-                    } else {
-                        ret_ = LINE_PROPERTY::PLAYER1_SEQUENCE_WITHOUT_BLOCKED;
-                    }
-                } else if ( ( board_->at(x_)[y_] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_+1)[y_+1] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_+2)[y_+2] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_+3)[y_+3] == TILE_STATE::PLAYER2 ) &&
-                    ( board_->at(x_+4)[y_+4] == TILE_STATE::PLAYER2 ) ) {
-                    if ( ( ( x_+5 < row_num_ ) && ( y_+5 < col_num_ ) &&
-                        ( board_->at(x_+5)[y_+5] == TILE_STATE::PLAYER1 ) ) &&
-                        ( ( x_-1 >= 0 ) && ( y_-1 >= 0 ) &&
-                        ( board_->at(x_-1)[y_-1] == TILE_STATE::PLAYER1 ) ) ) {
-                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_BLOCKED;
-                    } else {
-                        ret_ = LINE_PROPERTY::PLAYER2_SEQUENCE_WITHOUT_BLOCKED;
-                    }
-                } else {
-                    ret_ = LINE_PROPERTY::OTHER;
-                }
-            } else {
-                ret_ = LINE_PROPERTY::OTHER;
-            }
-            break;
-        default:
-            ret_ = LINE_PROPERTY::OTHER;
-            break;
-        }
-        return ret_;
-    }
 public:
     GAME_CHECK
     check_win(
-        std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_,
+        const Board& board_,
         const Coordinate& latest_move_ = {-1, -1}
     ) override {
-        if (Check_Tiles_Sequence::is_valid_coordinate(board_, latest_move_)) {
+        if (is_valid_coordinate(board_, latest_move_)) {
             Check_Tiles_Sequence win_checker_(board_, 5);
             return win_checker_(latest_move_, 2);
         } else {
-            return brute_force_check_win(board_);
+            for (int latitude_ = 0; latitude_ < board_.height(); ++latitude_) {
+                for (int longtitude_ = 0; longtitude_ < board_.width(); ++longtitude_) {
+                    Check_Tiles_Sequence tile_checker_(board_, 5);
+                    GAME_CHECK result_ = tile_checker_({latitude_, longtitude_}, 2);
+                    if (result_ != GAME_CHECK::ONGOING) {
+                        return result_;
+                    }
+                }
+            }
+            return GAME_CHECK::ONGOING;
         }
     }
+
     GAME_CHECK
     check_draw(
-        std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_
+        const Board& board_
     ) override {
         // Implement the logic for checking the draw condition
-        return brute_force_check_draw(board_);
+        return GAME_CHECK::ONGOING;
     }
 };
 
@@ -961,7 +559,7 @@ public:
 
     GAME_CHECK
     check_end_condition(
-        std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_,
+        const Board& board_,
         const Coordinate& latest_move_ = {-1, -1}
     ) {
         GAME_CHECK ret = GAME_CHECK::ONGOING;
@@ -1276,9 +874,9 @@ public:
         }
     }
 
-    std::shared_ptr<const std::vector<std::vector<TILE_STATE>>>
+    Board
     get_board() const {
-        return board->get_board();
+        return Board(board->get_board());
     }
 
     GAME_STATE

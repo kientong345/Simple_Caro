@@ -198,36 +198,68 @@ void caro_switch_turn(int gid_) {
     game_pool[gid_]->switch_turn();
 }
 
-void caro_get_board(int gid_, CARO_Board_Struct* data_) {
+void caro_get_board_row(int gid_, CARO_Board_Line* data_, int latitude_) {
     std::lock_guard<std::mutex> glck(pool_mutex);
     if ((gid_ < 0) || (gid_ >= game_pool.size()) || (!game_pool[gid_]) || (!data_)) {
         return;
     }
-    auto board_ = game_pool[gid_]->get_board();
-    data_->height = board_->size();
-    data_->width = board_->at(0).size();
-    data_->board = new CARO_TILE_STATE*[data_->height];
-    for (int k = 0; k < data_->height; ++k) {
-        data_->board[k] = new CARO_TILE_STATE[data_->width];
-    }
-
-    for (long i = 0; i < data_->height; ++i) {
-        for (long j = 0; j < data_->width; ++j) {
-            switch (board_->at(i)[j]) {
-            case Caro::TILE_STATE::EMPTY:
-                data_->board[i][j] = CARO_TILE_EMPTY;
-                break;
-            case Caro::TILE_STATE::PLAYER1:
-                data_->board[i][j] = CARO_TILE_PLAYER1;
-                break;
-            case Caro::TILE_STATE::PLAYER2:
-                data_->board[i][j] = CARO_TILE_PLAYER2;
-                break;
-            default:
-                data_->board[i][j] = CARO_TILE_EMPTY;
-                break;
-            }
+    std::vector<Caro::TILE_STATE> row_ = game_pool[gid_]->get_board().row(latitude_);
+    data_->length = row_.size();
+    data_->board_line = new CARO_TILE_STATE[data_->length];
+    for (int i = 0; i < data_->length; ++i) {
+        switch (row_[i]) {
+        case Caro::TILE_STATE::PLAYER1:
+            data_->board_line[i] = CARO_TILE_PLAYER1;
+            break;
+        case Caro::TILE_STATE::PLAYER2:
+            data_->board_line[i] = CARO_TILE_PLAYER2;
+            break;
+        case Caro::TILE_STATE::EMPTY:
+        default:
+            data_->board_line[i] = CARO_TILE_EMPTY;
+            break;
         }
+    }
+}
+
+void caro_get_board_column(int gid_, CARO_Board_Line* data_, int longtitude_) {
+    std::lock_guard<std::mutex> glck(pool_mutex);
+    if ((gid_ < 0) || (gid_ >= game_pool.size()) || (!game_pool[gid_]) || (!data_)) {
+        return;
+    }
+    std::vector<Caro::TILE_STATE> column_ = game_pool[gid_]->get_board().column(longtitude_);
+    data_->length = column_.size();
+    data_->board_line = new CARO_TILE_STATE[data_->length];
+    for (int i = 0; i < data_->length; ++i) {
+        switch (column_[i]) {
+        case Caro::TILE_STATE::PLAYER1:
+            data_->board_line[i] = CARO_TILE_PLAYER1;
+            break;
+        case Caro::TILE_STATE::PLAYER2:
+            data_->board_line[i] = CARO_TILE_PLAYER2;
+            break;
+        case Caro::TILE_STATE::EMPTY:
+        default:
+            data_->board_line[i] = CARO_TILE_EMPTY;
+            break;
+        }
+    }
+}
+
+CARO_TILE_STATE caro_get_tile_state(int gid_, int latitude_, int longtitude_) {
+    std::lock_guard<std::mutex> glck(pool_mutex);
+    if ((gid_ < 0) || (gid_ >= game_pool.size()) || (!game_pool[gid_])) {
+        return CARO_TILE_EMPTY;
+    }
+    Caro::TILE_STATE ret = game_pool[gid_]->get_board().tile(latitude_, longtitude_);
+    switch (ret) {
+    case Caro::TILE_STATE::PLAYER1:
+        return CARO_TILE_PLAYER1;
+    case Caro::TILE_STATE::PLAYER2:
+        return CARO_TILE_PLAYER2;
+    case Caro::TILE_STATE::EMPTY:
+    default:
+        return CARO_TILE_EMPTY;
     }
 }
 
@@ -283,8 +315,8 @@ void caro_get_moves_history(int gid_, CARO_Moves_Set* data_, CARO_PARTICIPANT wh
     data_->moves_set = new CARO_Coordinate[data_->length];
     for (int i = 0; i < data_->length; ++i) {
         CARO_Coordinate c_move = {
-            move_history_[i].x,
-            move_history_[i].y,
+            move_history_[i].latitude,
+            move_history_[i].longtitude,
         };
         data_->moves_set[i] = c_move;
     }
@@ -310,18 +342,15 @@ void caro_get_undone_moves(int gid_, CARO_Moves_Set* data_, CARO_PARTICIPANT who
     data_->moves_set = new CARO_Coordinate[data_->length];
     for (int i = 0; i < data_->length; ++i) {
         CARO_Coordinate c_move = {
-            undone_moves_[i].x,
-            undone_moves_[i].y,
+            undone_moves_[i].latitude,
+            undone_moves_[i].longtitude,
         };
         data_->moves_set[i] = c_move;
     }
 }
 
-void caro_free_board(CARO_Board_Struct* data_) {
-    for (int i = 0; i < data_->height; ++i) {
-        delete[] data_->board[i];
-    }
-    delete[] data_->board;
+void caro_free_board_line(CARO_Board_Line* data_) {
+    delete[] data_->board_line;
 }
 
 void caro_free_move_set(CARO_Moves_Set* data_) {

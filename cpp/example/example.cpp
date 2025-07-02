@@ -17,7 +17,7 @@ struct Pos {
 std::atomic<Pos> pl1_pos;
 std::atomic<Pos> pl2_pos;
 
-std::shared_ptr<const std::vector<std::vector<Caro::TILE_STATE>>> board_cache;
+std::shared_ptr<Caro::Board> board_cache(nullptr);
 
 int main() {
     // cli.display_allscreen();
@@ -33,13 +33,13 @@ int main() {
     game.set_rule(Caro::RULE_TYPE::FIVE_BLOCK_2);
 
     game.start(Caro::GAME_STATE::PLAYER1_TURN);
-    board_cache = game.get_board();
+    board_cache = std::make_shared<Caro::Board>(game.get_board());
     print_match();
 
     while (!game.is_over()) {
         handle_player_input();
         // std::cout << "done\n";
-        board_cache = game.get_board();
+        board_cache = std::make_shared<Caro::Board>(game.get_board());
         print_match();
     }
     
@@ -89,12 +89,14 @@ int main() {
 }
 
 void print_match() {
-    cli.display_board(1, 1, board_cache->size(), board_cache->at(0).size(), COLOR_BLUE);
+    cli.display_board(1, 1, board_cache->width(), board_cache->height(), COLOR_BLUE);
     cli.display_tile(pl1_pos.load().rowpos, pl1_pos.load().colpos, COLOR_GREEN);
     cli.display_tile(pl2_pos.load().rowpos, pl2_pos.load().colpos, COLOR_RED);
-    for (int i = 0; i < board_cache->size(); ++i) {
-        for (int j = 0; j < board_cache->at(i).size(); ++j) {
-            switch (board_cache->at(i)[j]) {
+
+    for (int i = 0; i < board_cache->height(); ++i) {
+        std::vector<Caro::TILE_STATE> row_(board_cache->row(i));
+        for (int j = 0; j < board_cache->width(); ++j) {
+            switch (row_[j]) {
             case Caro::TILE_STATE::PLAYER1:
                 cli.display_symbol(i, j, SYMBOL::PLAYER1, COLOR_GREEN);
                 break;
@@ -118,7 +120,7 @@ void handle_player_input() {
         break;
     case INPUT_TYPE::P1_DOWN:
     {
-        int new_row = std::min(pl1_pos.load().rowpos + 1, (int)board_cache->at(0).size() - 1);
+        int new_row = std::min(pl1_pos.load().rowpos + 1, (int)board_cache->height() - 1);
         int new_col = pl1_pos.load().colpos;
         pl1_pos.store({new_row, new_col});
     }
@@ -133,7 +135,7 @@ void handle_player_input() {
     case INPUT_TYPE::P1_RIGHT:
     {
         int new_row = pl1_pos.load().rowpos;
-        int new_col = std::min(pl1_pos.load().colpos + 1, (int)board_cache->size() - 1);
+        int new_col = std::min(pl1_pos.load().colpos + 1, (int)board_cache->width() - 1);
         pl1_pos.store({new_row, new_col});
     }
         break;
@@ -156,7 +158,7 @@ void handle_player_input() {
         break;
     case INPUT_TYPE::P2_DOWN:
     {
-        int new_row = std::min(pl2_pos.load().rowpos + 1, (int)board_cache->at(0).size() - 1);
+        int new_row = std::min(pl2_pos.load().rowpos + 1, (int)board_cache->height() - 1);
         int new_col = pl2_pos.load().colpos;
         pl2_pos.store({new_row, new_col});
     }
@@ -171,7 +173,7 @@ void handle_player_input() {
     case INPUT_TYPE::P2_RIGHT:
     {
         int new_row = pl2_pos.load().rowpos;
-        int new_col = std::min(pl2_pos.load().colpos + 1, (int)board_cache->size() - 1);
+        int new_col = std::min(pl2_pos.load().colpos + 1, (int)board_cache->width() - 1);
         pl2_pos.store({new_row, new_col});
     }
         break;
