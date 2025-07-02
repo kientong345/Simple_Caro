@@ -687,6 +687,16 @@ public:
         board = std::make_unique<Board_Context>(width_, height_);
     }
 
+    size_t
+    get_board_width() {
+        return board->get_board().width();
+    }
+
+    size_t
+    get_board_height() {
+        return board->get_board().height();
+    }
+
     void
     set_rule(RULE_TYPE rule_) {
         if (!judge) {
@@ -872,6 +882,11 @@ public:
         default:
             break;
         }
+    }
+
+    long
+    occupied_tiles_count() {
+        return board->occupied_tiles_count();
     }
 
     Board

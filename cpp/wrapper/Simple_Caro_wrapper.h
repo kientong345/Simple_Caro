@@ -59,6 +59,8 @@ typedef struct {
 int caro_init_game();
 void caro_deinit_game(int gid_);
 void caro_set_board_size(int gid_, int width_, int height_);
+size_t caro_get_board_width(int gid_);
+size_t caro_get_board_height(int gid_);
 void caro_set_rule(int gid_, CARO_RULE_TYPE rule_);
 void caro_unset_rule(int gid_);
 void caro_start(int gid_, CARO_GAME_STATE first_turn_);
@@ -67,6 +69,7 @@ CARO_MOVE_RESULT caro_player_move(int gid_, CARO_PARTICIPANT who_, CARO_Coordina
 CARO_MOVE_RESULT caro_player_undo(int gid_, CARO_PARTICIPANT who_);
 CARO_MOVE_RESULT caro_player_redo(int gid_, CARO_PARTICIPANT who_);
 void caro_switch_turn(int gid_);
+long caro_occupied_tiles_count(int gid_);
 void caro_get_board_row(int gid_, CARO_Board_Line* data_, int latitude_);
 void caro_get_board_column(int gid_, CARO_Board_Line* data_, int longtitude_);
 CARO_TILE_STATE caro_get_tile_state(int gid_, int latitude_, int longtitude_);

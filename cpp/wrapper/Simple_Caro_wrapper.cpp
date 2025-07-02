@@ -40,6 +40,22 @@ void caro_set_board_size(int gid_, int width_, int height_) {
     game_pool[gid_]->set_board_size(width_, height_);
 }
 
+size_t caro_get_board_width(int gid_) {
+    std::lock_guard<std::mutex> glck(pool_mutex);
+    if ((gid_ < 0) || (gid_ >= game_pool.size()) || (!game_pool[gid_])) {
+        return -1;
+    }
+    return game_pool[gid_]->get_board_width();
+}
+
+size_t caro_get_board_height(int gid_) {
+    std::lock_guard<std::mutex> glck(pool_mutex);
+    if ((gid_ < 0) || (gid_ >= game_pool.size()) || (!game_pool[gid_])) {
+        return -1;
+    }
+    return game_pool[gid_]->get_board_height();
+}
+
 void caro_set_rule(int gid_, CARO_RULE_TYPE rule_) {
     std::lock_guard<std::mutex> glck(pool_mutex);
     if ((gid_ < 0) || (gid_ >= game_pool.size()) || (!game_pool[gid_])) {
@@ -196,6 +212,14 @@ void caro_switch_turn(int gid_) {
         return;
     }
     game_pool[gid_]->switch_turn();
+}
+
+long caro_occupied_tiles_count(int gid_) {
+    std::lock_guard<std::mutex> glck(pool_mutex);
+    if ((gid_ < 0) || (gid_ >= game_pool.size()) || (!game_pool[gid_])) {
+        return -1;
+    }
+    return game_pool[gid_]->occupied_tiles_count();
 }
 
 void caro_get_board_row(int gid_, CARO_Board_Line* data_, int latitude_) {
