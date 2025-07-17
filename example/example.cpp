@@ -1,4 +1,4 @@
-#include "../single_include/Simple_Caro.h"
+#include <simple_caro/simple_caro.hpp>
 #include "../cli_tool/caro_cli/cli_graphic.h"
 #include <iostream>
 #include <string>
@@ -20,15 +20,7 @@ std::atomic<Pos> pl2_pos;
 std::shared_ptr<Caro::Board> board_cache(nullptr);
 
 int main() {
-    // cli.display_allscreen();
-
-    std::string player1_info = "Me";
-    std::string player2_info = "Computer";
-
     game.set_board_size(21, 34);
-    
-    game.register_player_info<std::string>(Caro::PARTICIPANT::PLAYER1, player1_info);
-    game.register_player_info<std::string>(Caro::PARTICIPANT::PLAYER2, player2_info);
 
     game.set_rule(Caro::RULE_TYPE::FIVE_BLOCK_2);
 

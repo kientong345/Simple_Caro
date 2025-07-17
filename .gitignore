@@ -1,5 +1,7 @@
 .vscode
 rust/*
-cpp/example/example
+example/example
 *.o
 *.rs
+app
+build

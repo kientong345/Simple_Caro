@@ -5,10 +5,6 @@
 #include <vector>
 #include <set>
 #include <memory>
-#if __cplusplus >= 201703L
-#include <any>
-#else
-#endif //  __cplusplus >= 201703L
 
 namespace Caro {
 
@@ -63,21 +59,6 @@ enum class GAME_CHECK {
     RULE_NOT_FOUND,
 };
 
-enum class LINE_TYPE {
-    HORIZONTAL,             // '-' to-the-right
-    VERTICAL,               // '|' upward
-    BACK_DIAGONAL,          // '\\' upward
-    FORWARD_DIAGONAL,       // '/' upward
-};
-
-enum class LINE_PROPERTY {
-    PLAYER1_SEQUENCE_WITHOUT_BLOCKED,
-    PLAYER2_SEQUENCE_WITHOUT_BLOCKED,
-    PLAYER1_SEQUENCE_BLOCKED,
-    PLAYER2_SEQUENCE_BLOCKED,
-    OTHER,
-};
-
 class Board {
 private:
     std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board;
@@ -87,12 +68,12 @@ public:
         std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_
     ) : board(board_) {}
 
-    size_t
+    uint32_t
     height() const {
         return board->size();
     }
 
-    size_t
+    uint32_t
     width() const {
         if (board->size() == 0) {
             return 0;
@@ -101,12 +82,12 @@ public:
     }
 
     std::vector<TILE_STATE>
-    row(size_t latitude_) const {
+    row(uint32_t latitude_) const {
 		return std::vector<TILE_STATE>(board->at(latitude_));
 	}
 
 	std::vector<TILE_STATE>
-    column(size_t longtitude_) const {
+    column(uint32_t longtitude_) const {
 		std::vector<TILE_STATE> column_;
 		column_.reserve(board->at(0).size());
 		for (int i = 0; i < board->size(); ++i) {
@@ -116,7 +97,7 @@ public:
 	}
 
 	TILE_STATE
-    tile(size_t latitude_, size_t longtitude_) const {
+    tile(uint32_t latitude_, uint32_t longtitude_) const {
 		return board->at(latitude_)[longtitude_];
 	}
 
@@ -133,18 +114,12 @@ inline bool is_valid_coordinate(
 
 class Player_Context {
 private:
-#if __cplusplus >= 201703L
-    std::any player_info;
-#else
-    void* player_info;
-#endif //  __cplusplus >= 201703L
     std::vector<Coordinate> moves_history;
     std::vector<Coordinate> undone_moves;
     std::set<Coordinate> moves_set;
 
 public:
-    Player_Context() : player_info(nullptr) {}
-
+    Player_Context() = default;
     ~Player_Context() = default;
 
     MOVE_RESULT
@@ -214,25 +189,6 @@ public:
         return moves_set;
     }
 
-    template<typename T>
-    void
-    make_info(const T& info_) {
-#if __cplusplus >= 201703L
-        player_info = std::make_any<T>(info_);
-#else
-        player_info = new T(info_);
-#endif //  __cplusplus >= 201703L
-    }
-
-    template<typename T>
-    T*
-    try_access_info() {
-#if __cplusplus >= 201703L
-        return std::any_cast<T>(&player_info);
-#else
-    return static_cast<T*>(player_info);
-#endif //  __cplusplus >= 201703L
-    }
 };
 
 class Board_Context {
@@ -638,49 +594,6 @@ public:
           latest_player2_move{-1, -1} {}
 
     ~Simple_Caro() = default;
-
-    template <typename T>
-    void
-    register_player_info(PARTICIPANT who_,
-                        const T& player_info_) {
-        switch (who_) {
-        case PARTICIPANT::PLAYER1:
-            if (!player1) {
-                player1 = std::make_unique<Player_Context>();
-            }
-            player1->make_info<T>(player_info_);
-            break;
-        case PARTICIPANT::PLAYER2:
-            if (!player2) {
-                player2 = std::make_unique<Player_Context>();
-            }
-            player2->make_info<T>(player_info_);
-            break;
-        default:
-            break;
-        }
-    }
-
-    template <typename T>
-    T*
-    access_player_info(PARTICIPANT who_) {
-        T* ret = nullptr;
-        switch (who_) {
-        case PARTICIPANT::PLAYER1:
-            if (player1) {
-                ret = player1->try_access_info<T>();
-            }
-            break;
-        case PARTICIPANT::PLAYER2:
-            if (player2) {
-                ret = player2->try_access_info<T>();
-            }
-            break;
-        default:
-            break;
-        }
-        return ret;
-    }
 
     void
     set_board_size(int32_t width_, int32_t height_) {
