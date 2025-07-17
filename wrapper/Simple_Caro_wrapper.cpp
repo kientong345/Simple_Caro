@@ -1,5 +1,5 @@
 #include "Simple_Caro_wrapper.h"
-#include "../single_include/Simple_Caro.h"
+#include "simple_caro/simple_caro.hpp"
 
 #include <memory>
 #include <vector>

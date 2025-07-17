@@ -3,5 +3,6 @@ rust/*
 example/example
 *.o
 *.rs
+*.a
 app
 build

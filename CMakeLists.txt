@@ -21,6 +21,10 @@ add_library(${SIMPLE_CARO_NAME} STATIC ${SOURCES})
 
 target_include_directories(${SIMPLE_CARO_NAME} PUBLIC "${WORKDIR}/simple_caro/include")
 
+file(COPY "${WORKDIR}/cli_tool/" DESTINATION "${CMAKE_BINARY_DIR}/cli_tool/")
+file(COPY "${WORKDIR}/example/" DESTINATION "${CMAKE_BINARY_DIR}/example/")
+file(COPY "${WORKDIR}/wrapper/" DESTINATION "${CMAKE_BINARY_DIR}/wrapper/")
+
 install(TARGETS ${SIMPLE_CARO_NAME}
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
