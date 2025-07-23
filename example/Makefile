@@ -1,6 +1,6 @@
 CC = clang++
 
-CFLAGS = -lncurses -lsimple_caro -latomic
+CFLAGS = -lsimple_caro
 
 SRCS = ./example.cpp
 
@@ -8,6 +8,9 @@ APP = ./app
 
 all:
 	$(CC) -o $(APP) $(SRCS) $(CFLAGS)
+
+run:
+	$(APP)
 
 clean:
 	rm -f $(APP)
