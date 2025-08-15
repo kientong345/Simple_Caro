@@ -52,9 +52,10 @@ Set board size and rule:
 
 *If you don't configure the game before calling start(), the game will start with default configuration.*
 
-### 4. Make a move
+### 4. Make a move and switch turn
 ```cpp
     game.player_move(Caro::PARTICIPANT::PLAYER1, {0, 0});
+    game.switch_turn(); // Switch to PLAYER2
     game.player_move(Caro::PARTICIPANT::PLAYER2, {1, 1});
 ```
 
