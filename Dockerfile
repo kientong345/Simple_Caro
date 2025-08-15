@@ -7,7 +7,6 @@ RUN apt-get update;\
         cmake\
         g++\
         make\
-        libncurses5-dev libncursesw5-dev\
         ;\
     apt-get autoremove --purge --yes;\
     apt-get clean;\
