@@ -9,10 +9,10 @@ namespace Caro {
 
 struct Coordinate {
     int64_t latitude;
-    int64_t longtitude;
+    int64_t longitude;
     bool operator<(const Coordinate& other) const {
         return (latitude < other.latitude) || 
-            (latitude == other.latitude && longtitude < other.longtitude);
+            (latitude == other.latitude && longitude < other.longitude);
     }
 };
 
@@ -59,44 +59,43 @@ enum class GAME_CHECK {
 
 class Board {
 private:
-    std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board;
+    std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> mBoard;
 
 public:
-    Board(
-        std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board_
-    ) : board(board_) {}
+    Board(std::shared_ptr<const std::vector<std::vector<TILE_STATE>>> board)
+    : mBoard(board) {}
 
     uint32_t
     height() const {
-        return board->size();
+        return mBoard->size();
     }
 
     uint32_t
     width() const {
-        if (board->size() == 0) {
+        if (mBoard->size() == 0) {
             return 0;
         }
-        return board->at(0).size();
+        return mBoard->at(0).size();
     }
 
     std::vector<TILE_STATE>
-    row(uint32_t latitude_) const {
-		return std::vector<TILE_STATE>(board->at(latitude_));
+    row(uint32_t latitude) const {
+		return std::vector<TILE_STATE>(mBoard->at(latitude));
 	}
 
 	std::vector<TILE_STATE>
-    column(uint32_t longtitude_) const {
-		std::vector<TILE_STATE> column_;
-		column_.reserve(board->at(0).size());
-		for (uint32_t i = 0; i < board->size(); ++i) {
-			column_.push_back(board->at(i)[longtitude_]);
+    column(uint32_t longitude) const {
+		std::vector<TILE_STATE> column;
+		column.reserve(mBoard->at(0).size());
+		for (uint32_t i = 0; i < mBoard->size(); ++i) {
+			column.push_back(mBoard->at(i)[longitude]);
 		}
-		return column_;
+		return column;
 	}
 
 	TILE_STATE
-    tile(uint32_t latitude_, uint32_t longtitude_) const {
-		return board->at(latitude_)[longtitude_];
+    tile(uint32_t latitude, uint32_t longitude) const {
+		return mBoard->at(latitude)[longitude];
 	}
 
 };

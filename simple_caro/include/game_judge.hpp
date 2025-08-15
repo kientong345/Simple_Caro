@@ -8,17 +8,17 @@ namespace Caro {
 
 class Game_Judge {
 private:
-    std::unique_ptr<Ruling> ruler;
+    std::unique_ptr<Ruling> mRuler;
 
 public:
-    Game_Judge(std::unique_ptr<Ruling> ruler_ = nullptr);
+    Game_Judge(std::unique_ptr<Ruling> ruler = nullptr);
     ~Game_Judge() = default;
 
     void
-    set_rule(RULE_TYPE rule_);
+    set_rule(RULE_TYPE rule);
 
     GAME_CHECK
-    check_end_condition(const Board& board_, const Coordinate& latest_move_ = {-1, -1});
+    check_end_condition(const Board& board, const Coordinate& latest_move = {-1, -1});
 
 };
 

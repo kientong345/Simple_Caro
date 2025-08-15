@@ -24,14 +24,14 @@ int main() {
         switch (game_state) {
         case Caro::GAME_STATE::PLAYER1_TURN:
             std::cout << "Player1 move (x y): ";
-            std::cin >> move.latitude >> move.longtitude;
+            std::cin >> move.latitude >> move.longitude;
             if ((game.player_move(Caro::PARTICIPANT::PLAYER1, move) == Caro::MOVE_RESULT::SUCCESS)) {
                 game.switch_turn();
             }
             break;
         case Caro::GAME_STATE::PLAYER2_TURN:
             std::cout << "Player2 move (x y): ";
-            std::cin >> move.latitude >> move.longtitude;
+            std::cin >> move.latitude >> move.longitude;
             if ((game.player_move(Caro::PARTICIPANT::PLAYER2, move) == Caro::MOVE_RESULT::SUCCESS)) {
                 game.switch_turn();
             }

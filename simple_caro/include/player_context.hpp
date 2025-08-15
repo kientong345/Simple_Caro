@@ -8,15 +8,15 @@ namespace Caro {
 
 class Player_Context {
 private:
-    std::vector<Coordinate> moves_history;
-    std::vector<Coordinate> undone_moves;
-    std::set<Coordinate> moves_set;
+    std::vector<Coordinate> mMoves_history;
+    std::vector<Coordinate> mUndone_moves;
+    std::set<Coordinate> mMoves_set;
 
 public:
     Player_Context() = default;
     ~Player_Context() = default;
     
-    MOVE_RESULT move(Coordinate move_);
+    MOVE_RESULT move(Coordinate move);
     MOVE_RESULT undo();
     MOVE_RESULT redo();
     void reset_context();

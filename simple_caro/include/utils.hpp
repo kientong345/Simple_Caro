@@ -5,33 +5,34 @@
 
 namespace Caro {
 
-inline bool is_valid_coordinate(const Board& board_, const Coordinate& coor_) {
-    return  board_.height() > 0 &&
-            board_.width() > 0 &&
-            coor_.latitude >= 0 && coor_.latitude < board_.height() &&
-            coor_.longtitude >= 0 && coor_.longtitude < board_.width();
+inline bool is_valid_coordinate(const Board& board, const Coordinate& coor) {
+    return (
+        (board.height() > 0) && (board.width() > 0) &&
+        (coor.latitude >= 0) && (coor.latitude < board.height()) &&
+        (coor.longitude >= 0) && (coor.longitude < board.width())
+    );
 }
 
-class Check_Tiles_Sequence {
+class Sequence_Detector {
 private:
-    Board board;
-    const unsigned int seq_count;
+    Board mBoard;
+    const unsigned int mSeq_count;
 
     bool
-    is_winning_sequence (
-        const Coordinate& coor_,
-        const size_t dx_, const size_t dy_,
-        bool& blocked_start_, bool& blocked_end_
+    sequence_detected (
+        const Coordinate& coor,
+        const size_t dx, const size_t dy,
+        bool& blocked_start, bool& blocked_end
     ) const;
 
 public:
-    Check_Tiles_Sequence(
-        const Board& board_,
-        unsigned int seq_count_);
+    Sequence_Detector(
+        const Board& board,
+        unsigned int seq_count);
 
     GAME_CHECK
     operator()(
-        const Coordinate& coor_, unsigned char block_num_
+        const Coordinate& coor, unsigned char block_num
     ) const;
 
 };

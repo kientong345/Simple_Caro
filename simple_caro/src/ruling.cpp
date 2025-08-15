@@ -4,17 +4,17 @@
 namespace Caro {
 
 GAME_CHECK
-Tic_Tac_Toe_Rule::check_win(const Board& board_, const Coordinate& latest_move_) {
-    if (is_valid_coordinate(board_, latest_move_)) {
-        Check_Tiles_Sequence win_checker_(board_, 3);
-        return win_checker_(latest_move_, 0);
+Tic_Tac_Toe_Rule::check_win(const Board& board, const Coordinate& latest_move) {
+    if (is_valid_coordinate(board, latest_move)) {
+        Sequence_Detector detect_from(board, 3);
+        return detect_from(latest_move, 0);
     } else {
-        for (uint32_t latitude_ = 0; latitude_ < board_.height(); ++latitude_) {
-            for (uint32_t longtitude_ = 0; longtitude_ < board_.width(); ++longtitude_) {
-                Check_Tiles_Sequence tile_checker_(board_, 3);
-                GAME_CHECK result_ = tile_checker_({latitude_, longtitude_}, 0);
-                if (result_ != GAME_CHECK::ONGOING) {
-                    return result_;
+        for (uint32_t latitude = 0; latitude < board.height(); ++latitude) {
+            for (uint32_t longitude = 0; longitude < board.width(); ++longitude) {
+                Sequence_Detector detect_from(board, 3);
+                GAME_CHECK result = detect_from({latitude, longitude}, 0);
+                if (result != GAME_CHECK::ONGOING) {
+                    return result;
                 }
             }
         }
@@ -23,23 +23,23 @@ Tic_Tac_Toe_Rule::check_win(const Board& board_, const Coordinate& latest_move_)
 }
 
 GAME_CHECK
-Tic_Tac_Toe_Rule::check_draw(const Board& board_) {
+Tic_Tac_Toe_Rule::check_draw(const Board& board) {
     // Implement the logic for checking the draw condition
     return GAME_CHECK::ONGOING;
 }
 
 GAME_CHECK
-Four_Block_1_Rule::check_win(const Board& board_, const Coordinate& latest_move_) {
-    if (is_valid_coordinate(board_, latest_move_)) {
-        Check_Tiles_Sequence win_checker_(board_, 4);
-        return win_checker_(latest_move_, 1);
+Four_Block_1_Rule::check_win(const Board& board, const Coordinate& latest_move) {
+    if (is_valid_coordinate(board, latest_move)) {
+        Sequence_Detector detect_from(board, 4);
+        return detect_from(latest_move, 1);
     } else {
-        for (uint32_t latitude_ = 0; latitude_ < board_.height(); ++latitude_) {
-            for (uint32_t longtitude_ = 0; longtitude_ < board_.width(); ++longtitude_) {
-                Check_Tiles_Sequence tile_checker_(board_, 4);
-                GAME_CHECK result_ = tile_checker_({latitude_, longtitude_}, 1);
-                if (result_ != GAME_CHECK::ONGOING) {
-                    return result_;
+        for (uint32_t latitude = 0; latitude < board.height(); ++latitude) {
+            for (uint32_t longitude = 0; longitude < board.width(); ++longitude) {
+                Sequence_Detector detect_from(board, 4);
+                GAME_CHECK result = detect_from({latitude, longitude}, 1);
+                if (result != GAME_CHECK::ONGOING) {
+                    return result;
                 }
             }
         }
@@ -48,23 +48,23 @@ Four_Block_1_Rule::check_win(const Board& board_, const Coordinate& latest_move_
 }
 
 GAME_CHECK
-Four_Block_1_Rule::check_draw(const Board& board_) {
+Four_Block_1_Rule::check_draw(const Board& board) {
     // Implement the logic for checking the draw condition
     return GAME_CHECK::ONGOING;
 }
 
 GAME_CHECK
-Five_Block_2_Rule::check_win(const Board& board_, const Coordinate& latest_move_) {
-    if (is_valid_coordinate(board_, latest_move_)) {
-        Check_Tiles_Sequence win_checker_(board_, 5);
-        return win_checker_(latest_move_, 2);
+Five_Block_2_Rule::check_win(const Board& board, const Coordinate& latest_move) {
+    if (is_valid_coordinate(board, latest_move)) {
+        Sequence_Detector detect_from(board, 5);
+        return detect_from(latest_move, 2);
     } else {
-        for (uint32_t latitude_ = 0; latitude_ < board_.height(); ++latitude_) {
-            for (uint32_t longtitude_ = 0; longtitude_ < board_.width(); ++longtitude_) {
-                Check_Tiles_Sequence tile_checker_(board_, 5);
-                GAME_CHECK result_ = tile_checker_({latitude_, longtitude_}, 2);
-                if (result_ != GAME_CHECK::ONGOING) {
-                    return result_;
+        for (uint32_t latitude = 0; latitude < board.height(); ++latitude) {
+            for (uint32_t longitude = 0; longitude < board.width(); ++longitude) {
+                Sequence_Detector detect_from(board, 5);
+                GAME_CHECK result = detect_from({latitude, longitude}, 2);
+                if (result != GAME_CHECK::ONGOING) {
+                    return result;
                 }
             }
         }
@@ -73,7 +73,7 @@ Five_Block_2_Rule::check_win(const Board& board_, const Coordinate& latest_move_
 }
 
 GAME_CHECK
-Five_Block_2_Rule::check_draw(const Board& board_) {
+Five_Block_2_Rule::check_draw(const Board& board) {
     // Implement the logic for checking the draw condition
     return GAME_CHECK::ONGOING;
 }

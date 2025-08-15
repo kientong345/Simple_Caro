@@ -3,18 +3,17 @@
 namespace Caro {
 
 MOVE_RESULT
-Player_Context::move(Coordinate move_) {
+Player_Context::move(Coordinate move) {
     MOVE_RESULT ret = MOVE_RESULT::SUCCESS;
-    if ((move_.latitude < 0) || (move_.longtitude < 0)) {
+    if ( (move.latitude < 0) || (move.longitude < 0) ) {
         ret = MOVE_RESULT::OUT_OF_BOUNDS;
-    } else if ((moves_set.find(move_)) != 
-                (moves_set.end())) {
+    } else if (mMoves_set.find(move) != mMoves_set.end()) {
         ret = MOVE_RESULT::ALREADY_OCCUPIED;
     } else {
-        moves_history.push_back(move_);
-        moves_set.insert(move_);
-        if (!undone_moves.empty()) {
-            undone_moves.pop_back();
+        mMoves_history.push_back(move);
+        mMoves_set.insert(move);
+        if (!mUndone_moves.empty()) {
+            mUndone_moves.pop_back();
         }
         ret = MOVE_RESULT::SUCCESS;
     }
@@ -23,11 +22,11 @@ Player_Context::move(Coordinate move_) {
 
 MOVE_RESULT
 Player_Context::undo() {
-    if (!moves_history.empty()) {
-        Coordinate move_ = moves_history.back();
-        moves_history.pop_back();
-        undone_moves.push_back(move_);
-        moves_set.erase(move_);
+    if (!mMoves_history.empty()) {
+        Coordinate move = mMoves_history.back();
+        mMoves_history.pop_back();
+        mUndone_moves.push_back(move);
+        mMoves_set.erase(move);
         return MOVE_RESULT::SUCCESS;
     } else {
         return MOVE_RESULT::OUT_OF_BOUNDS;
@@ -36,11 +35,11 @@ Player_Context::undo() {
 
 MOVE_RESULT
 Player_Context::redo() {
-    if (!undone_moves.empty()) {
-        Coordinate move_ = undone_moves.back();
-        undone_moves.pop_back();
-        moves_history.push_back(move_);
-        moves_set.insert(move_);
+    if (!mUndone_moves.empty()) {
+        Coordinate move = mUndone_moves.back();
+        mUndone_moves.pop_back();
+        mMoves_history.push_back(move);
+        mMoves_set.insert(move);
         return MOVE_RESULT::SUCCESS;
     } else {
         return MOVE_RESULT::OUT_OF_BOUNDS;
@@ -49,24 +48,24 @@ Player_Context::redo() {
 
 void
 Player_Context::reset_context() {
-    undone_moves.clear();
-    moves_history.clear();
-    moves_set.clear();
+    mUndone_moves.clear();
+    mMoves_history.clear();
+    mMoves_set.clear();
 }
 
 const std::vector<Coordinate>
 Player_Context::get_moves_history() const {
-    return moves_history;
+    return mMoves_history;
 }
 
 const std::vector<Coordinate>
 Player_Context::get_undone_moves() const {
-    return undone_moves;
+    return mUndone_moves;
 }
     
 const std::set<Coordinate>
 Player_Context::get_moves_set() const {
-    return moves_set;
+    return mMoves_set;
 }
 
 } // namespace Caro

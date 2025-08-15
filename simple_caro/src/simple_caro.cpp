@@ -4,34 +4,32 @@ namespace Caro {
 
 void
 Simple_Caro::update_context() {
-    GAME_CHECK is_end_ = GAME_CHECK::ONGOING;
-    switch (state) {
+    GAME_CHECK is_end = GAME_CHECK::ONGOING;
+    switch (mState) {
     case GAME_STATE::PLAYER1_TURN:
-        is_end_ = judge->check_end_condition(board->get_board(),
-                                            latest_player1_move);
+        is_end = mJudge->check_end_condition(mBoard->get_board(), mLatest_player1_move);
         break;
     case GAME_STATE::PLAYER2_TURN:
-        is_end_ = judge->check_end_condition(board->get_board(),
-                                            latest_player2_move);
+        is_end = mJudge->check_end_condition(mBoard->get_board(), mLatest_player2_move);
         break;
     default:
         // brute force check all board
-        is_end_ = judge->check_end_condition(board->get_board(),
-                                            {-1, -1});
+        is_end = mJudge->check_end_condition(mBoard->get_board(), {-1, -1});
         break;
     }
 
-    if ((is_end_ != GAME_CHECK::RULE_NOT_FOUND) && 
-        (is_end_ != GAME_CHECK::ONGOING)) {
-        switch (is_end_) {
+    if (
+        (is_end != GAME_CHECK::RULE_NOT_FOUND) && (is_end != GAME_CHECK::ONGOING)
+    ) {
+        switch (is_end) {
         case GAME_CHECK::PLAYER1_WIN:
-            state = GAME_STATE::PLAYER1_WON;
+            mState = GAME_STATE::PLAYER1_WON;
             break;
         case GAME_CHECK::PLAYER2_WIN:
-            state = GAME_STATE::PLAYER2_WON;
+            mState = GAME_STATE::PLAYER2_WON;
             break;
         case GAME_CHECK::DRAW:
-            state = GAME_STATE::DREW;
+            mState = GAME_STATE::DREW;
             break;
         default:
             break;
@@ -40,99 +38,97 @@ Simple_Caro::update_context() {
 }
 
 Simple_Caro::Simple_Caro()
-    : player1(nullptr),
-        player2(nullptr),
-        board(nullptr),
-        judge(nullptr),
-        state(GAME_STATE::NOT_INPROGRESS),
-        latest_player1_move{-1, -1},
-        latest_player2_move{-1, -1} {}
+    : mPlayer1(nullptr),
+    mPlayer2(nullptr),
+    mBoard(nullptr),
+    mJudge(nullptr),
+    mState(GAME_STATE::NOT_INPROGRESS),
+    mLatest_player1_move{-1, -1},
+    mLatest_player2_move{-1, -1} {}
 
 void
-Simple_Caro::set_board_size(int32_t width_, int32_t height_) {
-    board = std::make_unique<Board_Context>(width_, height_);
+Simple_Caro::set_board_size(int32_t width, int32_t height) {
+    mBoard = std::make_unique<Board_Context>(width, height);
 }
 
 size_t
 Simple_Caro::get_board_width() {
-    return board->get_board().width();
+    return mBoard->get_board().width();
 }
 
 size_t
 Simple_Caro::get_board_height() {
-    return board->get_board().height();
+    return mBoard->get_board().height();
 }
 
 void
-Simple_Caro::set_rule(RULE_TYPE rule_) {
-    if (!judge) {
-        judge = std::make_unique<Game_Judge>();
+Simple_Caro::set_rule(RULE_TYPE rule) {
+    if (!mJudge) {
+        mJudge = std::make_unique<Game_Judge>();
     }
-    judge->set_rule(rule_);
+    mJudge->set_rule(rule);
 }
 
 void
 Simple_Caro::unset_rule() {
-    judge = nullptr;
+    mJudge = nullptr;
 }
 
 void
-Simple_Caro::start(GAME_STATE first_turn_) {
-    if (!player1) {
-        player1 = std::make_unique<Player_Context>();
+Simple_Caro::start(GAME_STATE first_turn) {
+    if (!mPlayer1) {
+        mPlayer1 = std::make_unique<Player_Context>();
     }
-    if (!player2) {
-        player2 = std::make_unique<Player_Context>();
+    if (!mPlayer2) {
+        mPlayer2 = std::make_unique<Player_Context>();
     }
-    if (!board) {
-        board = std::make_unique<Board_Context>(1000, 1000);
+    if (!mBoard) {
+        mBoard = std::make_unique<Board_Context>(1000, 1000);
     }
-    if (!judge) {
-        judge = std::make_unique<Game_Judge>();
-        judge->set_rule(RULE_TYPE::FOUR_BLOCK_1);
+    if (!mJudge) {
+        mJudge = std::make_unique<Game_Judge>();
+        mJudge->set_rule(RULE_TYPE::FOUR_BLOCK_1);
     }
-    state = first_turn_;
+    mState = first_turn;
 }
 
 void
 Simple_Caro::stop() {
-    if (player1) {
-        player1->reset_context();
+    if (mPlayer1) {
+        mPlayer1->reset_context();
     }
-    if (player2) {
-        player2->reset_context();
+    if (mPlayer2) {
+        mPlayer2->reset_context();
     }
-    if (board) {
-        board->reset_context();
+    if (mBoard) {
+        mBoard->reset_context();
     }
-    state = GAME_STATE::NOT_INPROGRESS;
+    mState = GAME_STATE::NOT_INPROGRESS;
 }
 
 MOVE_RESULT
-Simple_Caro::player_move(PARTICIPANT who_, Coordinate move_) {
+Simple_Caro::player_move(PARTICIPANT who, Coordinate move) {
     MOVE_RESULT ret = MOVE_RESULT::SUCCESS;
-    switch (who_) {
+    switch (who) {
     case PARTICIPANT::PLAYER1:
-        if (state != GAME_STATE::PLAYER1_TURN) {
+        if (mState != GAME_STATE::PLAYER1_TURN) {
             ret = MOVE_RESULT::WRONG_TURN;
         } else {
-            ret = board->set_tile(move_,
-                                TILE_STATE::PLAYER1);
+            ret = mBoard->set_tile(move, TILE_STATE::PLAYER1);
             if (ret == MOVE_RESULT::SUCCESS) {
-                ret = player1->move(move_);
-                latest_player1_move = move_;
+                ret = mPlayer1->move(move);
+                mLatest_player1_move = move;
             }
         }
         break;
     case PARTICIPANT::PLAYER2:
-        if (state != GAME_STATE::PLAYER2_TURN) {
+        if (mState != GAME_STATE::PLAYER2_TURN) {
             ret = MOVE_RESULT::WRONG_TURN;
         } else {
-            ret = board->set_tile(move_,
-                                TILE_STATE::PLAYER2);
+            ret = mBoard->set_tile(move, TILE_STATE::PLAYER2);
             if (ret == MOVE_RESULT::SUCCESS) {
-                ret = player2->move(move_);
-                latest_player2_move = move_;
+                ret = mPlayer2->move(move);
+                mLatest_player2_move = move;
             }
         }
         break;
@@ -147,36 +143,28 @@ Simple_Caro::player_move(PARTICIPANT who_, Coordinate move_) {
 }
 
 MOVE_RESULT
-Simple_Caro::player_undo(PARTICIPANT who_) {
+Simple_Caro::player_undo(PARTICIPANT who) {
     MOVE_RESULT ret = MOVE_RESULT::SUCCESS;
-    switch (who_) {
+    switch (who) {
     case PARTICIPANT::PLAYER1:
-        if (state != GAME_STATE::PLAYER1_TURN) {
+        if (mState != GAME_STATE::PLAYER1_TURN) {
             ret = MOVE_RESULT::WRONG_TURN;
         } else {
-            ret = player1->undo();
+            ret = mPlayer1->undo();
             if (ret == MOVE_RESULT::SUCCESS) {
-                ret = board->unset_tile(player1
-                                        ->get_undone_moves()
-                                        .back());
-                latest_player1_move = player1
-                                    ->get_moves_history()
-                                    .back();
+                ret = mBoard->unset_tile(mPlayer1->get_undone_moves().back());
+                mLatest_player1_move = mPlayer1->get_moves_history().back();
             }
         }
         break;
     case PARTICIPANT::PLAYER2:
-        if (state != GAME_STATE::PLAYER2_TURN) {
+        if (mState != GAME_STATE::PLAYER2_TURN) {
             ret = MOVE_RESULT::WRONG_TURN;
         } else {
-            ret = player2->undo();
+            ret = mPlayer2->undo();
             if (ret == MOVE_RESULT::SUCCESS) {
-                ret = board->unset_tile(player2
-                                        ->get_undone_moves()
-                                        .back());
-                latest_player2_move = player2
-                                    ->get_moves_history()
-                                    .back();
+                ret = mBoard->unset_tile(mPlayer2->get_undone_moves().back());
+                mLatest_player2_move = mPlayer2->get_moves_history().back();
             }
         }
         break;
@@ -191,38 +179,30 @@ Simple_Caro::player_undo(PARTICIPANT who_) {
 }
 
 MOVE_RESULT
-Simple_Caro::player_redo(PARTICIPANT who_) {
+Simple_Caro::player_redo(PARTICIPANT who) {
     MOVE_RESULT ret = MOVE_RESULT::SUCCESS;
-    switch (who_) {
+    switch (who) {
     case PARTICIPANT::PLAYER1:
-        if (state != GAME_STATE::PLAYER1_TURN) {
+        if (mState != GAME_STATE::PLAYER1_TURN) {
             ret = MOVE_RESULT::WRONG_TURN;
         } else {
-            ret = player1->redo();
+            ret = mPlayer1->redo();
             if (ret == MOVE_RESULT::SUCCESS) {
-                ret = board->set_tile(player1
-                                    ->get_moves_history()
-                                    .back(),
-                                    TILE_STATE::PLAYER1);
-                latest_player1_move = player1
-                                    ->get_moves_history()
-                                    .back();
+                ret = mBoard->set_tile(mPlayer1->get_moves_history().back(),
+                                       TILE_STATE::PLAYER1);
+                mLatest_player1_move = mPlayer1->get_moves_history().back();
             }
         }
         break;
     case PARTICIPANT::PLAYER2:
-        if (state != GAME_STATE::PLAYER2_TURN) {
+        if (mState != GAME_STATE::PLAYER2_TURN) {
             ret = MOVE_RESULT::WRONG_TURN;
         } else {
-            ret = player2->redo();
+            ret = mPlayer2->redo();
             if (ret == MOVE_RESULT::SUCCESS) {
-                ret = board->set_tile(player2
-                                    ->get_moves_history()
-                                    .back(),
-                                    TILE_STATE::PLAYER2);
-                latest_player2_move = player2
-                                    ->get_moves_history()
-                                    .back();
+                ret = mBoard->set_tile(mPlayer2->get_moves_history().back(),
+                                       TILE_STATE::PLAYER2);
+                mLatest_player2_move = mPlayer2->get_moves_history().back();
             }
         }
         break;
@@ -238,12 +218,12 @@ Simple_Caro::player_redo(PARTICIPANT who_) {
 
 void
 Simple_Caro::switch_turn() {
-    switch (state) {
+    switch (mState) {
     case GAME_STATE::PLAYER1_TURN:
-        state = GAME_STATE::PLAYER2_TURN;
+        mState = GAME_STATE::PLAYER2_TURN;
         break;
     case GAME_STATE::PLAYER2_TURN:
-        state = GAME_STATE::PLAYER1_TURN;
+        mState = GAME_STATE::PLAYER1_TURN;
         break;
     default:
         break;
@@ -252,38 +232,40 @@ Simple_Caro::switch_turn() {
 
 long
 Simple_Caro::occupied_tiles_count() const {
-    return board->occupied_tiles_count();
+    return mBoard->occupied_tiles_count();
 }
 
 Board
 Simple_Caro::get_board() const {
-    return Board(board->get_board());
+    return Board(mBoard->get_board());
 }
 
 GAME_STATE
 Simple_Caro::get_state() const {
-    return state;
+    return mState;
 }
 
 bool
 Simple_Caro::is_over() const {
-    return (state == GAME_STATE::PLAYER1_WON ||
-            state == GAME_STATE::PLAYER2_WON ||
-            state == GAME_STATE::DREW);
+    return (
+        (mState == GAME_STATE::PLAYER1_WON) ||
+        (mState == GAME_STATE::PLAYER2_WON) ||
+        (mState == GAME_STATE::DREW)
+    );
 }
 
 const std::vector<Coordinate>
-Simple_Caro::get_moves_history(PARTICIPANT who_) const {
+Simple_Caro::get_moves_history(PARTICIPANT who) const {
     std::vector<Coordinate> ret;
-    switch (who_) {
+    switch (who) {
     case PARTICIPANT::PLAYER1:
-        if (player1) {
-            ret = std::move(player1->get_moves_history());
+        if (mPlayer1) {
+            ret = std::move(mPlayer1->get_moves_history());
         }
         break;
     case PARTICIPANT::PLAYER2:
-        if (player2) {
-            ret = std::move(player2->get_moves_history());
+        if (mPlayer2) {
+            ret = std::move(mPlayer2->get_moves_history());
         }
         break;
     default:
@@ -293,17 +275,17 @@ Simple_Caro::get_moves_history(PARTICIPANT who_) const {
 }
 
 const std::vector<Coordinate>
-Simple_Caro::get_undone_moves(PARTICIPANT who_) const {
+Simple_Caro::get_undone_moves(PARTICIPANT who) const {
     std::vector<Coordinate> ret;
-    switch (who_) {
+    switch (who) {
     case PARTICIPANT::PLAYER1:
-        if (player1) {
-            ret = std::move(player1->get_undone_moves());
+        if (mPlayer1) {
+            ret = std::move(mPlayer1->get_undone_moves());
         }
         break;
     case PARTICIPANT::PLAYER2:
-        if (player2) {
-            ret = std::move(player2->get_undone_moves());
+        if (mPlayer2) {
+            ret = std::move(mPlayer2->get_undone_moves());
         }
         break;
     default:
