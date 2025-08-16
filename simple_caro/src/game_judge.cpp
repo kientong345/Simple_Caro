@@ -23,26 +23,23 @@ Game_Judge::set_rule(RULE_TYPE rule)
     }
 }
 
-GAME_CHECK
-Game_Judge::check_end_condition(
+GAME_EVENT
+Game_Judge::judge(
     const Board& board,
     const Coordinate& latest_move
 ) {
-    GAME_CHECK ret = GAME_CHECK::ONGOING;
+    GAME_EVENT event = GAME_EVENT::NO_EVENT;
     if (!mRuler) {
-        ret = GAME_CHECK::RULE_NOT_FOUND;
+        event = GAME_EVENT::NO_AVAILABLE_RULE;
     } else {
-        GAME_CHECK anyone_win = mRuler->check_win(board, latest_move);
-        GAME_CHECK is_draw = mRuler->check_draw(board);
-        if (anyone_win != GAME_CHECK::ONGOING) {
-            ret = anyone_win;
-        } else if (is_draw != GAME_CHECK::ONGOING) {
-            ret = is_draw;
+        GAME_EVENT has_event = mRuler->examine(board, latest_move);
+        if (has_event != GAME_EVENT::NO_EVENT) {
+            event = has_event;
         } else {
-            ret = GAME_CHECK::ONGOING;
+            event = GAME_EVENT::NO_EVENT;
         }
     }
-    return ret;
+    return event;
 }
 
 } // namespace Caro

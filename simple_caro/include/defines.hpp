@@ -17,8 +17,10 @@ struct Coordinate {
     int64_t latitude;
     int64_t longitude;
     bool operator<(const Coordinate& other) const {
-        return (latitude < other.latitude) || 
-            (latitude == other.latitude && longitude < other.longitude);
+        return (
+            (latitude < other.latitude) || 
+            ((latitude == other.latitude) && (longitude < other.longitude))
+        );
     }
 };
 
@@ -76,15 +78,15 @@ enum class PARTICIPANT {
 };
 
 /**
- * @brief Game check enumeration representing the result of a game check operation.
- * @note The game check is used to determine if a player has won, if the game is ongoing, or if it has ended in a draw.
+ * @brief Game event enumeration representing the result of a game event check operation.
+ * @note The game event is used to determine if a player has won, if the game is ongoing, or if it has ended in a draw.
  */
-enum class GAME_CHECK {
-    ONGOING,
-    PLAYER1_WIN,
-    PLAYER2_WIN,
-    DRAW,
-    RULE_NOT_FOUND,
+enum class GAME_EVENT {
+    NO_EVENT,
+    PLAYER1_FULL_SEQUENCED,
+    PLAYER2_FULL_SEQUENCED,
+    BOARD_FULL,
+    NO_AVAILABLE_RULE,
 };
 
 /**

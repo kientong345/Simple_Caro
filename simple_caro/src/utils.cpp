@@ -57,26 +57,26 @@ Sequence_Detector::sequence_detected (
         (mBoard.tile(cur_coor.latitude, cur_coor.longitude) == opposite_tile_state)
     ) ? true : false;
 
-    return (move_counter-1 >= mSeq_count) ? true : false;
+    return (move_counter-1 >= mSeq_length) ? true : false;
 }
 
 Sequence_Detector::Sequence_Detector(
     const Board& board,
-    unsigned int seq_count)
-: mBoard(std::move(board)), mSeq_count(seq_count) {}
+    unsigned int seq_length)
+: mBoard(std::move(board)), mSeq_length(seq_length) {}
 
-GAME_CHECK
+GAME_EVENT
 Sequence_Detector::operator()(
-    const Coordinate& coor, unsigned char block_num
+    const Coordinate& coor, unsigned char disallowed_head_blocks
 ) const {
     if (!is_valid_coordinate(mBoard, coor)) {
-        return GAME_CHECK::RULE_NOT_FOUND;
+        return GAME_EVENT::NO_AVAILABLE_RULE;
     }
     if (mBoard.tile(coor.latitude, coor.longitude) == TILE_STATE::EMPTY) {
-        return GAME_CHECK::ONGOING;
+        return GAME_EVENT::NO_EVENT;
     }
-    if (block_num > 2) {
-        return GAME_CHECK::RULE_NOT_FOUND;
+    if (disallowed_head_blocks > 2) {
+        return GAME_EVENT::NO_AVAILABLE_RULE;
     }
 
     const std::vector<std::pair<size_t, size_t>> direction_units = {
@@ -102,15 +102,15 @@ Sequence_Detector::operator()(
         );
 
         if (
-            ( ( block_num == 0 ) && ( nonblocked_winning ) ) ||
-            ( ( block_num == 1 ) && ( blocked1_winning) ) ||
-            ( ( block_num == 2 ) && ( blocked2_winning ) )
+            ( (disallowed_head_blocks == 0) && (nonblocked_winning) ) ||
+            ( (disallowed_head_blocks == 1) && (blocked1_winning) ) ||
+            ( (disallowed_head_blocks == 2) && (blocked2_winning) )
         ) {
             switch (mBoard.tile(coor.latitude, coor.longitude)) {
             case TILE_STATE::PLAYER1:
-                return GAME_CHECK::PLAYER1_WIN;
+                return GAME_EVENT::PLAYER1_FULL_SEQUENCED;
             case TILE_STATE::PLAYER2:
-                return GAME_CHECK::PLAYER2_WIN;
+                return GAME_EVENT::PLAYER2_FULL_SEQUENCED;
             case TILE_STATE::EMPTY:
             default:
                 break;
@@ -118,7 +118,7 @@ Sequence_Detector::operator()(
         }
     }
 
-    return GAME_CHECK::ONGOING;
+    return GAME_EVENT::NO_EVENT;
 }
 
 } // namespace Caro

@@ -4,31 +4,32 @@ namespace Caro {
 
 void
 Simple_Caro::update_context() {
-    GAME_CHECK is_end = GAME_CHECK::ONGOING;
+    GAME_EVENT event = GAME_EVENT::NO_EVENT;
     switch (mState) {
     case GAME_STATE::PLAYER1_TURN:
-        is_end = mJudge->check_end_condition(mBoard->get_board(), mLatest_player1_move);
+        event = mJudge->judge(mBoard->get_board(), mLatest_player1_move);
         break;
     case GAME_STATE::PLAYER2_TURN:
-        is_end = mJudge->check_end_condition(mBoard->get_board(), mLatest_player2_move);
+        event = mJudge->judge(mBoard->get_board(), mLatest_player2_move);
         break;
     default:
         // brute force check all board
-        is_end = mJudge->check_end_condition(mBoard->get_board(), {-1, -1});
+        event = mJudge->judge(mBoard->get_board());
         break;
     }
 
     if (
-        (is_end != GAME_CHECK::RULE_NOT_FOUND) && (is_end != GAME_CHECK::ONGOING)
+        (event != GAME_EVENT::NO_AVAILABLE_RULE) &&
+        (event != GAME_EVENT::NO_EVENT)
     ) {
-        switch (is_end) {
-        case GAME_CHECK::PLAYER1_WIN:
+        switch (event) {
+        case GAME_EVENT::PLAYER1_FULL_SEQUENCED:
             mState = GAME_STATE::PLAYER1_WON;
             break;
-        case GAME_CHECK::PLAYER2_WIN:
+        case GAME_EVENT::PLAYER2_FULL_SEQUENCED:
             mState = GAME_STATE::PLAYER2_WON;
             break;
-        case GAME_CHECK::DRAW:
+        case GAME_EVENT::BOARD_FULL:
             mState = GAME_STATE::DREW;
             break;
         default:

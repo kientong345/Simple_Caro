@@ -17,8 +17,8 @@ public:
     void
     set_rule(RULE_TYPE rule);
 
-    GAME_CHECK
-    check_end_condition(const Board& board, const Coordinate& latest_move = {-1, -1});
+    GAME_EVENT
+    judge(const Board& board, const Coordinate& latest_move = {-1, -1});
 
 };
 

@@ -16,7 +16,7 @@ inline bool is_valid_coordinate(const Board& board, const Coordinate& coor) {
 class Sequence_Detector {
 private:
     Board mBoard;
-    const unsigned int mSeq_count;
+    const unsigned int mSeq_length;
 
     bool
     sequence_detected (
@@ -28,11 +28,12 @@ private:
 public:
     Sequence_Detector(
         const Board& board,
-        unsigned int seq_count);
+        unsigned int seq_length
+    );
 
-    GAME_CHECK
+    GAME_EVENT
     operator()(
-        const Coordinate& coor, unsigned char block_num
+        const Coordinate& coor, unsigned char disallowed_head_blocks
     ) const;
 
 };
