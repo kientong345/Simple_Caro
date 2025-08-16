@@ -123,13 +123,28 @@ public:
     }
 
     /**
-     * @brief Get the board as a 2D vector.
-     * @return A 2D vector representing the board.
+     * @brief Get a row from the board.
+     * @param latitude The row index to retrieve.
+     * @return A vector representing the specified row.
      */
     std::vector<TILE_STATE>
     row(uint32_t latitude) const {
 		return std::vector<TILE_STATE>(mBoard->at(latitude));
 	}
+
+    /**
+     * @brief Get all rows from the board.
+     * @return A vector of vectors representing all rows.
+     */
+    std::vector<std::vector<TILE_STATE>>
+    rows() const {
+        std::vector<std::vector<TILE_STATE>> rows;
+        rows.reserve(mBoard->size());
+        for (const auto& row : *mBoard) {
+            rows.push_back(row);
+        }
+        return rows;
+    }
 
     /**
      * @brief Get a column from the board.
@@ -145,6 +160,20 @@ public:
 		}
 		return column;
 	}
+
+    /**
+     * @brief Get all columns from the board.
+     * @return A vector of vectors representing all columns.
+     */
+    std::vector<std::vector<TILE_STATE>>
+    columns() const {
+        std::vector<std::vector<TILE_STATE>> columns;
+        columns.reserve(mBoard->at(0).size());
+        for (uint32_t i = 0; i < mBoard->at(0).size(); ++i) {
+            columns.push_back(column(i));
+        }
+        return columns;
+    }
 
     /**
      * @brief Get the tile state at a specific coordinate.
