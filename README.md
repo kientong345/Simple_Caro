@@ -17,13 +17,13 @@
 ## 🚀 Installation
 
 ```bash
-git clone <your_repo_url>
+git clone "git@github.com:kientong345/Simple_Caro.git"
 cd Simple_Caro
 mkdir build
 cd build
 cmake ..
 make
-# Optional:
+# Install the library into your system
 sudo make install
 ```
 
@@ -32,52 +32,52 @@ sudo make install
 ## 🛠 Usage
 ### 1. Create a new game
 ```cpp
-    #include <simple_caro.hpp>
-    Caro::Simple_Caro game;
+#include <simple_caro.hpp>
+Caro::Simple_Caro game;
 ```
 
 ### 2. Configure the game
 Set board size and rule:
 ```cpp
-    game.set_board_size(10, 10);
-    game.set_rule(Caro::RULE_TYPE::FIVE_BLOCK_2);
+game.set_board_size(10, 10);
+game.set_rule(Caro::RULE_TYPE::FIVE_BLOCK_2);
 ```
 
 ### 3. Start the game
 ```cpp
-    game.start(); // Default first turn is PLAYER1
-    // Or specify which player goes first:
-    game.start(Caro::GAME_STATE::PLAYER2_TURN);
+game.start(); // Default first turn is PLAYER1
+// Or specify which player goes first:
+game.start(Caro::GAME_STATE::PLAYER2_TURN);
 ```
 
 *If you don't configure the game before calling start(), the game will start with default configuration.*
 
 ### 4. Make a move and switch turn
 ```cpp
-    game.player_move(Caro::PARTICIPANT::PLAYER1, {0, 0});
-    game.switch_turn(); // Switch to PLAYER2
-    game.player_move(Caro::PARTICIPANT::PLAYER2, {1, 1});
+game.player_move(Caro::PARTICIPANT::PLAYER1, {0, 0});
+game.switch_turn(); // Switch to PLAYER2
+game.player_move(Caro::PARTICIPANT::PLAYER2, {1, 1});
 ```
 
 ### 5. Undo/Redo
 ```cpp
-    game.player_undo(Caro::PARTICIPANT::PLAYER1);
-    game.player_redo(Caro::PARTICIPANT::PLAYER1);
+game.player_undo(Caro::PARTICIPANT::PLAYER1);
+game.player_redo(Caro::PARTICIPANT::PLAYER1);
 ```
 
 ### 6. Get board state and history
 ```cpp
-    auto board = game.get_board();
-    auto moves = game.get_moves_history(Caro::PARTICIPANT::PLAYER1);
-    auto undones = game.get_undone_moves(Caro::PARTICIPANT::PLAYER1);
+Caro::Board board = game.get_board();
+std::vector<Caro::Coordinate> moves = game.get_moves_history(Caro::PARTICIPANT::PLAYER1);
+std::vector<Caro::Coordinate> undones = game.get_undone_moves(Caro::PARTICIPANT::PLAYER1);
 ```
 
 ### 7. Check game state
 ```cpp
-    if (game.is_over()) {
-        auto state = game.get_state();
-        // handle win/draw
-    }
+if (game.is_over()) {
+    auto state = game.get_state();
+    // handle win/draw
+}
 ```
 
 ---
